@@ -28,8 +28,8 @@ router.get('/', auth, async (req, res) => {
     
     res.json(response.data);
   } catch (err) {
-    console.error('Weather fetch error:', err.message);
-    res.status(500).send('Server Error');
+    console.error('Weather fetch error:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json(err.response?.data || { message: 'Server Error' });
   }
 });
 

@@ -9,10 +9,7 @@ export default function SoilTestAI() {
   const [cropPlanned, setCropPlanned] = useState('')
   const [reportFile, setReportFile] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [activeChatReq, setActiveChatReq] = useState(null)
-  const [chatMessages, setChatMessages] = useState([])
-  const [chatInput, setChatInput] = useState('')
-  const messagesEndRef = useRef(null)
+  const [activeReport, setActiveReport] = useState(null)
 
   const fetchSoilTests = async () => {
     try {
@@ -35,14 +32,7 @@ export default function SoilTestAI() {
     fetchSoilTests()
   }, [])
 
-  useEffect(() => {
-    if (activeChatReq && chatMessages.length === 0) {
-      setChatMessages([
-        { sender: 'ai', text: `Hi! I'm GreenKrt AI. I've analyzed your report. Your soil score is ${activeChatReq.results?.score}%. How can I help you understand these results?` }
-      ])
-    }
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeChatReq, chatMessages])
+
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -74,7 +64,7 @@ export default function SoilTestAI() {
         setReportFile(null)
         await fetchSoilTests()
         const data = await res.json()
-        setActiveChatReq(data)
+        setActiveReport(data)
       } else {
         const errData = await res.json()
         alert(errData.message || 'Analysis failed. Please try again.')
@@ -86,78 +76,80 @@ export default function SoilTestAI() {
     }
   }
 
-  const handleSendMessage = (e) => {
-    e.preventDefault()
-    if (!chatInput.trim()) return
-
-    const userMsg = { sender: 'user', text: chatInput }
-    setChatMessages(prev => [...prev, userMsg])
-    setChatInput('')
-
-    // Mock AI response
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        sender: 'ai', 
-        text: "Based on the nutrient profile, I recommend adding 20kg of Urea per acre. This will help with the planned crop. Any other questions?" 
-      }])
-    }, 1500)
+  const closeReport = () => {
+    setActiveReport(null)
   }
 
-  const closeChat = () => {
-    setActiveChatReq(null)
-    setChatMessages([])
-  }
-
-  if (activeChatReq) {
+  if (activeReport) {
+    const { results } = activeReport
     return (
-      <div className="max-w-4xl mx-auto h-[80vh] flex flex-col bg-white rounded-xl shadow-lg border border-[#bfcaba] overflow-hidden">
+      <div className="max-w-4xl mx-auto flex flex-col bg-white rounded-xl shadow-lg border border-[#bfcaba] overflow-hidden">
         <div className="bg-[#0d631b] text-white p-4 flex justify-between items-center">
           <div>
             <h2 className="font-bold text-lg flex items-center gap-2">
-              <span className="material-symbols-outlined">smart_toy</span>
-              GreenKrt Agronomy AI
+              <span className="material-symbols-outlined">analytics</span>
+              AI Soil Analysis Report
             </h2>
-            <p className="text-xs text-white/80">Discussing Report ID: {activeChatReq.requestId}</p>
+            <p className="text-xs text-white/80">Report ID: {activeReport.requestId} • {activeReport.soilType || 'Unknown Soil'}</p>
           </div>
           <div className="flex gap-4">
-            <a href={`http://localhost:5000${activeChatReq.reportUrl}`} target="_blank" rel="noreferrer" className="text-sm font-bold bg-white text-[#0d631b] px-3 py-1.5 rounded hover:bg-[#eaf4e7] transition-colors">
-              View Report
+            <a href={`http://localhost:5000${activeReport.reportUrl}`} target="_blank" rel="noreferrer" className="text-sm font-bold bg-white text-[#0d631b] px-3 py-1.5 rounded hover:bg-[#eaf4e7] transition-colors">
+              View Original PDF
             </a>
-            <button onClick={closeChat} className="text-white hover:text-[#d3e3cd]">
+            <button onClick={closeReport} className="text-white hover:text-[#d3e3cd]">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-[#f8fcf7] space-y-4">
-          <div className="flex justify-center mb-6">
-            <div className="bg-[#e8f3e5] px-4 py-2 rounded-full text-xs font-bold text-[#0d631b] border border-[#bfcaba]">
-              Analysis Completed • Soil Score: {activeChatReq.results?.score}%
+        <div className="p-6 bg-[#f8fcf7]">
+          <div className="flex justify-center mb-8">
+            <div className="text-center">
+              <div className="text-5xl font-black text-[#0d631b] mb-1">{results?.score}%</div>
+              <div className="text-sm font-bold text-[#40493d] uppercase tracking-wider">Overall Soil Health Score</div>
             </div>
           </div>
-          {chatMessages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[70%] p-3 rounded-2xl ${msg.sender === 'user' ? 'bg-[#0d631b] text-white rounded-tr-sm' : 'bg-white border border-[#bfcaba] text-[#1a1c1c] rounded-tl-sm shadow-sm'}`}>
-                <p className="text-sm leading-relaxed">{msg.text}</p>
-              </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
 
-        <div className="p-4 bg-white border-t border-[#bfcaba]">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <input 
-              type="text" 
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              placeholder="Ask the AI about your soil health..." 
-              className="flex-1 h-12 px-4 border border-[#bfcaba] rounded-full focus:outline-none focus:border-[#0d631b] bg-[#f8fcf7]"
-            />
-            <button type="submit" disabled={!chatInput.trim()} className="w-12 h-12 rounded-full bg-[#0d631b] text-white flex items-center justify-center hover:bg-[#0a4a14] disabled:opacity-50 transition-colors">
-              <span className="material-symbols-outlined">send</span>
-            </button>
-          </form>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div className="bg-white p-4 rounded-xl border border-[#bfcaba] text-center shadow-sm">
+              <div className="text-2xl font-bold text-[#1a1c1c]">{results?.ph}</div>
+              <div className="text-xs text-[#40493d] font-semibold mt-1">pH Level</div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[#bfcaba] text-center shadow-sm">
+              <div className="text-2xl font-bold text-[#1a1c1c]">{results?.carbon}%</div>
+              <div className="text-xs text-[#40493d] font-semibold mt-1">Organic Carbon</div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[#bfcaba] text-center shadow-sm">
+              <div className="text-2xl font-bold text-[#1a1c1c]">{results?.nitrogen}</div>
+              <div className="text-xs text-[#40493d] font-semibold mt-1">Nitrogen (kg/ha)</div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[#bfcaba] text-center shadow-sm">
+              <div className="text-2xl font-bold text-[#1a1c1c]">{results?.phosphorus}</div>
+              <div className="text-xs text-[#40493d] font-semibold mt-1">Phosphorus (kg/ha)</div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-[#bfcaba] text-center shadow-sm">
+              <div className="text-2xl font-bold text-[#1a1c1c]">{results?.potassium}</div>
+              <div className="text-xs text-[#40493d] font-semibold mt-1">Potassium (kg/ha)</div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-[#bfcaba] p-6 shadow-sm">
+            <h3 className="font-bold text-lg text-[#1a1c1c] mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#0d631b]">lightbulb</span>
+              AI Recommendations
+            </h3>
+            <ul className="space-y-3">
+              {results?.recommendations?.map((rec, i) => (
+                <li key={i} className="flex gap-3 text-[#1a1c1c]">
+                  <span className="material-symbols-outlined text-[#0d631b] shrink-0 text-[20px] mt-0.5">check_circle</span>
+                  <span className="leading-relaxed">{rec}</span>
+                </li>
+              ))}
+              {!results?.recommendations?.length && (
+                <li className="text-[#40493d]">No recommendations available.</li>
+              )}
+            </ul>
+          </div>
         </div>
       </div>
     )
@@ -255,10 +247,10 @@ export default function SoilTestAI() {
                     
                     <div className="flex gap-2 mt-4">
                       <button 
-                        onClick={() => setActiveChatReq(req)}
+                        onClick={() => setActiveReport(req)}
                         className="flex-1 h-9 bg-[#0d631b] hover:bg-[#0a4a14] text-white text-xs font-bold uppercase rounded flex items-center justify-center gap-1 transition-colors"
                       >
-                        <span className="material-symbols-outlined text-[16px]">chat</span> Chat with AI
+                        <span className="material-symbols-outlined text-[16px]">analytics</span> View Report
                       </button>
                       {req.reportUrl && (
                         <a 
