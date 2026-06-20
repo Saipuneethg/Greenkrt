@@ -1,0 +1,237 @@
+import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
+
+export default function LoginPage() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
+  const { language, setLanguage, t } = useLanguage()
+  const [showPass, setShowPass] = useState(false)
+  const [role, setRole] = useState('farmer')
+  const [identifier, setIdentifier] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [shouldSignUp, setShouldSignUp] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.message || 'Login failed. Please check your credentials.')
+        setShouldSignUp(data.shouldSignUp || false)
+      } else {
+        // Store token separately
+        sessionStorage.setItem('greenkrt_token', data.token)
+        // Save full user object (includes firstName, lastName, email, role, etc.)
+        login(data.user, data.token)
+        navigate(data.user.role === 'admin' ? '/admin' : '/dashboard')
+      }
+    } catch {
+      setError('Unable to connect to server. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Quick demo access — logs in using seeded backend credentials
+  const handleDemoAccess = async (role) => {
+    setError('')
+    setLoading(true)
+    const email = role === 'admin' ? 'admin@greenkrt.com' : 'farmer@greenkrt.com';
+    const password = role === 'admin' ? 'adminpassword' : 'farmerpassword';
+
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: email, password }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        sessionStorage.setItem('greenkrt_token', data.token)
+        login(data.user, data.token)
+        navigate(data.user.role === 'admin' ? '/admin' : '/dashboard')
+      } else {
+        setError(data.message)
+      }
+    } catch {
+      setError('Unable to connect to server. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex bg-[#f9f9f9] font-sans">
+      {/* Left Panel */}
+      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-[#0A1F0C] p-16 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#00C853 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2">
+            <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
+            <span className="font-bold text-2xl text-white">GreenKrt</span>
+          </div>
+        </div>
+        <div className="relative z-10">
+          <blockquote className="text-3xl font-bold text-white leading-tight mb-6" style={{fontFamily:'Lora,serif'}}>
+            <span className="italic text-[#00C853]">"Smart farming</span><br/>
+            starts with better<br/>decisions."
+          </blockquote>
+          <p className="text-white/60 text-lg">Join 12,000+ farmers transforming their yield with GreenKrt.</p>
+        </div>
+        <div className="relative z-10 grid grid-cols-3 gap-4">
+          {[
+            { value: '12k+', label: 'Active Farmers' },
+            { value: '3.4k+', label: 'Drone Services' },
+            { value: '98%', label: 'Satisfaction Rate' },
+          ].map(stat => (
+            <div key={stat.label} className="glass-panel p-4 rounded-xl">
+              <div className="text-[#00C853] font-bold text-xl">{stat.value}</div>
+              <div className="text-white/60 text-xs mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right Panel */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-16">
+        {/* Language Toggle */}
+        <div className="absolute top-6 right-6 flex bg-[#e2e2e2] rounded-full p-1">
+          {[{ code: 'en', label: 'EN' }, { code: 'te', label: 'తె' }].map((l) => (
+            <button key={l.code} onClick={() => setLanguage(l.code)} className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${language === l.code ? 'bg-[#0d631b] text-white' : 'text-[#40493d] hover:text-[#0d631b]'}`}>{l.label}</button>
+          ))}
+        </div>
+
+        {/* Mobile Brand */}
+        <div className="lg:hidden flex items-center gap-2 mb-10">
+          <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
+          <span className="font-bold text-2xl text-[#0d631b]">GreenKrt</span>
+        </div>
+
+        <div className="w-full max-w-md">
+          <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">{t('auth.login_title')}</h1>
+          <p className="text-[#40493d] mb-6">{t('auth.login_subtitle')}</p>
+
+          {/* Role Select */}
+          <div className="flex bg-[#e8e8e8] rounded-xl p-1 mb-6">
+            {['farmer', 'admin'].map(r => (
+              <button
+                type="button"
+                key={r}
+                onClick={() => setRole(r)}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all capitalize ${role === r ? 'bg-[#0d631b] text-white shadow-sm' : 'text-[#40493d] hover:text-[#0d631b]'}`}
+              >{r === 'farmer' ? '🌾 ' + t('auth.farmer') : '⚙️ ' + t('auth.admin')}</button>
+            ))}
+          </div>
+
+          {error && !shouldSignUp && (
+            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-start gap-2">
+              <span className="material-symbols-outlined text-red-500 text-lg mt-0.5">error</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {shouldSignUp && (
+            <div className="mb-6 p-4 bg-[#f3fcef] border border-[#9cf49c] rounded-xl text-center">
+              <span className="material-symbols-outlined text-[#0d631b] text-3xl mb-2">person_add</span>
+              <h3 className="font-bold text-[#1a1c1c] mb-1">Account not found</h3>
+              <p className="text-sm text-[#40493d] mb-4">{error}</p>
+              <Link to="/signup">
+                <button className="px-6 py-2 bg-[#0d631b] text-white text-sm font-bold rounded-lg hover:bg-[#0a4f15] transition-colors shadow-sm">
+                  Create an Account
+                </button>
+              </Link>
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-semibold text-[#1a1c1c] mb-2">{t('auth.email')} / Phone</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d]">person</span>
+                <input
+                  type="text"
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
+                  placeholder="+91 XXXXX XXXXX or email"
+                  required
+                  className="w-full h-[52px] pl-12 pr-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] focus:ring-2 focus:ring-[#0d631b]/20 bg-white"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#1a1c1c] mb-2">{t('auth.password')}</label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d]">lock</span>
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="w-full h-[52px] pl-12 pr-12 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] focus:ring-2 focus:ring-[#0d631b]/20 bg-white"
+                />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#40493d] hover:text-[#0d631b]">
+                  <span className="material-symbols-outlined">{showPass ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <a href="#" className="text-sm text-[#0d631b] font-semibold hover:underline">Forgot Password?</a>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-[52px] bg-[#0d631b] hover:bg-[#0d631b]/90 text-white font-bold text-sm uppercase tracking-wider rounded-lg transition-colors shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {loading ? <><span className="material-symbols-outlined animate-spin text-lg">progress_activity</span> Signing in…</> : t('auth.login_btn')}
+            </button>
+            <div className="relative flex items-center gap-4">
+              <div className="flex-1 h-px bg-[#bfcaba]"></div>
+              <span className="text-xs text-[#40493d]">OR CONTINUE WITH</span>
+              <div className="flex-1 h-px bg-[#bfcaba]"></div>
+            </div>
+            <button type="button" className="w-full h-[52px] border border-[#bfcaba] rounded-lg flex items-center justify-center gap-3 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f3f3f3] transition-colors bg-white">
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+              Continue with Google
+            </button>
+          </form>
+
+          <p className="text-center mt-8 text-sm text-[#40493d]">
+            {t('auth.no_account')}{' '}
+            <Link to="/signup" className="text-[#0d631b] font-semibold hover:underline">{t('auth.create_one')}</Link>
+          </p>
+
+          {/* Demo Access */}
+          <div className="mt-6 p-4 bg-[#f3f3f3] rounded-xl border border-[#bfcaba]">
+            <p className="text-xs font-bold text-[#1a1c1c] mb-3">Quick Demo Access:</p>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => handleDemoAccess('farmer')}
+                className="px-4 py-2 bg-[#0d631b] text-white text-xs font-semibold rounded-lg hover:opacity-90"
+              >
+                Farmer Dashboard
+              </button>
+              <button
+                onClick={() => handleDemoAccess('admin')}
+                className="px-4 py-2 bg-[#2f3131] text-white text-xs font-semibold rounded-lg hover:opacity-90"
+              >
+                Admin Panel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
