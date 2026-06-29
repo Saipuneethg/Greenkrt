@@ -45,9 +45,9 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <DataProvider>
-        <AuthProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <DataProvider>
           <CartProvider>
             <BrowserRouter>
           <Routes>
@@ -89,8 +89,8 @@ export default function App() {
           </Routes>
             </BrowserRouter>
           </CartProvider>
-        </AuthProvider>
-      </DataProvider>
-    </LanguageProvider>
+        </DataProvider>
+      </LanguageProvider>
+    </AuthProvider>
   )
 }

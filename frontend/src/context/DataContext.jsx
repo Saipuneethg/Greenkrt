@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 
 const DataContext = createContext()
 
 export function DataProvider({ children }) {
+  const { user } = useAuth()
   const [products, setProducts] = useState([])
   const [services, setServices] = useState([])
   const [loading, setLoading] = useState(false)
@@ -43,14 +45,16 @@ export function DataProvider({ children }) {
     }
   }
 
-  // Load initial data on mount/token presence
+  // Load data when user is authenticated
   useEffect(() => {
-    const token = sessionStorage.getItem('greenkrt_token')
-    if (token) {
+    if (user) {
       fetchProducts()
       fetchServices()
+    } else {
+      setProducts([])
+      setServices([])
     }
-  }, [])
+  }, [user])
 
   const addProduct = async (productData) => {
     try {

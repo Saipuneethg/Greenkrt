@@ -11,6 +11,10 @@ const orderRoutes = require('./routes/orders');
 const soilTestRoutes = require('./routes/soilTests');
 const adminRoutes = require('./routes/admin');
 const weatherRoutes = require('./routes/weather');
+const farmRoutes = require('./routes/farms');
+const cartRoutes = require('./routes/cart');
+const warehouseRoutes = require('./routes/warehouses');
+const transferRoutes = require('./routes/transfers');
 const seedDB = require('./seed');
 
 const app = express();
@@ -50,6 +54,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/soil-tests', soilTestRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/weather', weatherRoutes);
+app.use('/api/farms', farmRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/transfers', transferRoutes);
 
 // MongoDB Connection
 mongoose.connect((process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/greenkrt').trim())

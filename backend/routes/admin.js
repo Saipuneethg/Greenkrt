@@ -6,7 +6,7 @@ const Booking = require('../models/Booking');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); 
 
 // @route   GET /api/admin/farmers
 // @desc    Get all registered farmers
@@ -156,6 +156,101 @@ router.get('/analytics', [auth, admin], async (req, res) => {
     const shippedCount = await Order.countDocuments({ status: 'Shipped' });
     const deliveredCount = await Order.countDocuments({ status: 'Delivered' });
 
+    // Recent Orders (last 5)
+    const recentOrders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('user', 'firstName lastName');
+
+    // Recent Services (last 5)
+    const recentServices = await Booking.find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('user', 'firstName lastName');
+
+    // New registrations count (last 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const newRegistrations = await User.countDocuments({
+      role: 'farmer',
+      createdAt: { $gte: sevenDaysAgo }
+    });
+
+    // Unassigned orders count
+    const unassignedOrders = await Order.countDocuments({
+      $or: [
+        { deliveryPartner: null },
+        { deliveryPartner: { $exists: false } }
+      ]
+    });
+
+    // Calculate monthly revenue for last 6 months
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      last6Months.push({
+        monthName: d.toLocaleString('default', { month: 'short' }),
+        monthNum: d.getMonth(),
+        year: d.getFullYear(),
+        revenue: 0
+      });
+    }
+
+    // Populate order items and their products to get categories
+    const allOrders = await Order.find({}).populate('items.product');
+
+    // Calculate revenue per month
+    allOrders.forEach(order => {
+      const orderDate = new Date(order.createdAt);
+      const match = last6Months.find(m => m.monthNum === orderDate.getMonth() && m.year === orderDate.getFullYear());
+      if (match) {
+        match.revenue += order.totalAmount;
+      }
+    });
+
+    // Calculate category share
+    const categoryCounts = {
+      Fertilizers: 0,
+      Pesticides: 0,
+      Micronutrients: 0,
+      Seeds: 0,
+      Others: 0
+    };
+
+    let totalItemsCount = 0;
+    allOrders.forEach(order => {
+      order.items.forEach(item => {
+        const cat = item.product?.category || 'Others';
+        if (categoryCounts[cat] !== undefined) {
+          categoryCounts[cat] += item.quantity;
+        } else {
+          categoryCounts.Others += item.quantity;
+        }
+        totalItemsCount += item.quantity;
+      });
+    });
+
+    const categoryShare = [];
+    if (totalItemsCount > 0) {
+      Object.keys(categoryCounts).forEach(cat => {
+        const count = categoryCounts[cat];
+        if (count > 0) {
+          categoryShare.push({
+            category: cat,
+            count,
+            percentage: Math.round((count / totalItemsCount) * 100)
+          });
+        }
+      });
+    } else {
+      categoryShare.push(
+        { category: 'Fertilizers', count: 0, percentage: 45 },
+        { category: 'Pesticides', count: 0, percentage: 28 },
+        { category: 'Micronutrients', count: 0, percentage: 17 },
+        { category: 'Seeds', count: 0, percentage: 10 }
+      );
+    }
+
     res.json({
       kpis: {
         totalFarmers,
@@ -170,6 +265,12 @@ router.get('/analytics', [auth, admin], async (req, res) => {
         Shipped: shippedCount,
         Delivered: deliveredCount,
       },
+      recentOrders,
+      recentServices,
+      newRegistrations,
+      unassignedOrders,
+      monthlyRevenue: last6Months.map(m => ({ label: m.monthName, revenue: m.revenue })),
+      categoryShare
     });
   } catch (err) {
     console.error(err.message);

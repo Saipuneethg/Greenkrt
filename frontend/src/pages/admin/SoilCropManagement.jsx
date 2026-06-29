@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function SoilCropManagement() {
   const [requests, setRequests] = useState([])
@@ -14,11 +15,20 @@ export default function SoilCropManagement() {
   const [potassium, setPotassium] = useState(180)
   const [recs, setRecs] = useState('Apply 20kg Urea per acre to boost Nitrogen.\nSoil is slightly acidic; consider adding 50kg Lime.\nExcellent condition for growing Cotton or Chilli.')
 
+  // Custom alert and confirmation states
+  const [modalConfig, setModalConfig] = useState({ show: false, message: '', isError: false })
+  const [confirmConfig, setConfirmConfig] = useState({ show: false, message: '', onConfirm: null })
+
   const regions = [
     { name: 'Guntur, AP', primaryCrop: 'Chilli, Cotton', soilTypes: 'Black Cotton, Red', activeFarmers: 4200 },
     { name: 'Krishna, AP', primaryCrop: 'Paddy, Sugarcane', soilTypes: 'Alluvial, Black', activeFarmers: 3800 },
     { name: 'Nalgonda, TS', primaryCrop: 'Paddy, Sweet Orange', soilTypes: 'Red, Chalky', activeFarmers: 2100 },
   ]
+
+  const showMessage = (message, isError = false) => {
+    setModalConfig({ show: true, message, isError })
+    setTimeout(() => setModalConfig({ show: false, message: '', isError: false }), 3000)
+  }
 
   const fetchRequests = async () => {
     try {
@@ -66,15 +76,69 @@ export default function SoilCropManagement() {
       })
 
       if (res.ok) {
-        alert('Soil test completed successfully!')
+        showMessage('Soil test completed successfully!')
         setSelectedReq(null)
         fetchRequests()
       } else {
-        alert('Failed to update soil test request.')
+        showMessage('Failed to update soil test request.', true)
       }
     } catch {
-      alert('Error connecting to server.')
+      showMessage('Error connecting to server.', true)
     }
+  }
+
+  const handleReject = async (requestId) => {
+    setConfirmConfig({
+      show: true,
+      message: `Are you sure you want to reject soil test request ${requestId}?`,
+      onConfirm: async () => {
+        setConfirmConfig({ show: false, message: '', onConfirm: null })
+        try {
+          const res = await fetch(`http://localhost:5000/api/soil-tests/${requestId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-auth-token': sessionStorage.getItem('greenkrt_token'),
+            },
+            body: JSON.stringify({ status: 'Rejected' }),
+          })
+          if (res.ok) {
+            showMessage('Request rejected successfully.')
+            fetchRequests()
+          } else {
+            showMessage('Failed to reject request.', true)
+          }
+        } catch {
+          showMessage('Error connecting to server.', true)
+        }
+      }
+    })
+  }
+
+  const handleClearAll = () => {
+    setConfirmConfig({
+      show: true,
+      message: 'Are you sure you want to clear all soil test requests from the database? This action is permanent.',
+      onConfirm: async () => {
+        setConfirmConfig({ show: false, message: '', onConfirm: null })
+        try {
+          const res = await fetch('http://localhost:5000/api/soil-tests/clear-all', {
+            method: 'POST',
+            headers: {
+              'x-auth-token': sessionStorage.getItem('greenkrt_token'),
+            },
+          })
+          if (res.ok) {
+            showMessage('All soil test requests cleared successfully.')
+            fetchRequests()
+          } else {
+            showMessage('Failed to clear requests.', true)
+          }
+        } catch {
+          showMessage('Error connecting to server.', true)
+        }
+      }
+    })
   }
 
   return (
@@ -86,34 +150,54 @@ export default function SoilCropManagement() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Farmer Soil Test Requests */}
-        <div className="bg-white border border-[#bccbb9] rounded-lg p-5 lg:col-span-2">
-          <h2 className="font-bold text-[#161d16] mb-4">Farmer Soil Test Requests</h2>
+        <div className="bg-white border border-[#bccbb9] rounded-lg p-5 lg:col-span-2 flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-bold text-[#161d16]">Farmer Soil Test Requests</h2>
+            {!loading && requests.length > 0 && (
+              <button 
+                onClick={handleClearAll}
+                className="border border-red-600 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded font-semibold text-xs flex items-center gap-1 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span> Clear All Requests
+              </button>
+            )}
+          </div>
           {loading ? (
             <p className="text-sm text-[#3d4a3d]">Loading requests...</p>
           ) : requests.length === 0 ? (
-            <p className="text-sm text-[#3d4a3d]">No requests found.</p>
+            <p className="text-sm text-[#3d4a3d] py-4">No requests found.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-1">
               {requests.map(req => (
-                <div key={req.requestId} className="p-3 border rounded-lg flex justify-between items-center bg-[#fcfcfc] hover:border-[#006e2f] transition-all">
+                <div key={req.requestId} className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#fcfcfc] hover:border-[#006e2f] transition-all">
                   <div>
                     <h3 className="font-bold text-sm text-[#161d16]">{req.requestId} • {req.user?.firstName} {req.user?.lastName}</h3>
-                    <p className="text-xs text-[#3d4a3d]">Location: {req.farmLocation} | Crop Planned: {req.cropPlanned || 'N/A'}</p>
+                    <p className="text-xs text-[#3d4a3d] mt-1">Location: {req.farmLocation || 'N/A'} | Crop Planned: {req.cropPlanned || 'N/A'}</p>
                     {req.reportUrl && (
-                      <a href={`http://localhost:5000${req.reportUrl}`} target="_blank" rel="noreferrer" className="text-xs text-[#006e2f] font-semibold hover:underline mt-1 inline-block">
+                      <a href={`http://localhost:5000${req.reportUrl}`} target="_blank" rel="noreferrer" className="text-xs text-[#006e2f] font-semibold hover:underline mt-2 inline-block">
                         View Uploaded Report
                       </a>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs px-2 py-0.5 rounded font-bold ${req.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{req.status}</span>
-                    {req.status !== 'Completed' && (
-                      <button 
-                        onClick={() => setSelectedReq(req)}
-                        className="text-xs font-bold text-white bg-[#006e2f] hover:bg-[#005a26] px-3 py-1 rounded"
-                      >
-                        Enter Results
-                      </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-xs px-2 py-0.5 rounded font-bold ${req.status === 'Completed' ? 'bg-green-100 text-green-800' : (req.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')}`}>
+                      {req.status}
+                    </span>
+                    {req.status !== 'Completed' && req.status !== 'Rejected' && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setSelectedReq(req)}
+                          className="text-xs font-bold text-white bg-[#006e2f] hover:bg-[#005a26] px-3 py-1.5 rounded transition-colors"
+                        >
+                          Enter Results
+                        </button>
+                        <button 
+                          onClick={() => handleReject(req.requestId)}
+                          className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -195,6 +279,68 @@ export default function SoilCropManagement() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Custom Modal Notification (Portal) */}
+      {modalConfig.show && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col transform scale-100 transition-transform">
+            <div className={`px-6 py-4 border-b flex items-center gap-3 ${modalConfig.isError ? 'bg-[#fff0f0] border-[#ffdad6]' : 'bg-[#f0f6ec] border-[#bfcaba]'}`}>
+              <span className={`material-symbols-outlined text-[24px] ${modalConfig.isError ? 'text-[#ba1a1a]' : 'text-[#0d631b]'}`}>
+                {modalConfig.isError ? 'error' : 'check_circle'}
+              </span>
+              <h3 className={`font-bold text-lg ${modalConfig.isError ? 'text-[#93000a]' : 'text-[#0d631b]'}`}>
+                {modalConfig.isError ? 'Error' : 'Success'}
+              </h3>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-[#1a1c1c] text-base font-medium">{modalConfig.message}</p>
+            </div>
+            <div className="px-6 pb-6 pt-2 flex justify-center">
+              <button 
+                onClick={() => setModalConfig({ show: false, message: '', isError: false })} 
+                className={`px-8 py-2 font-bold rounded-lg transition-colors ${
+                  modalConfig.isError 
+                    ? 'bg-[#ba1a1a] text-white hover:bg-[#93000a]' 
+                    : 'bg-[#0d631b] text-white hover:bg-[#0a4a14]'
+                }`}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Custom Confirm Dialog (Portal) */}
+      {confirmConfig.show && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col transform scale-100 transition-transform">
+            <div className="px-6 py-4 border-b bg-[#fff0f0] border-[#ffdad6] flex items-center gap-3">
+              <span className="material-symbols-outlined text-[24px] text-[#ba1a1a]">help</span>
+              <h3 className="font-bold text-lg text-[#93000a]">Confirm Action</h3>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-[#1a1c1c] text-base font-medium">{confirmConfig.message}</p>
+            </div>
+            <div className="px-6 pb-6 pt-2 flex justify-end gap-3">
+              <button 
+                onClick={() => setConfirmConfig({ show: false, message: '', onConfirm: null })} 
+                className="px-4 py-2 font-bold rounded-lg bg-[#f3f3f3] text-[#40493d] hover:bg-[#e2e2e2] transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmConfig.onConfirm} 
+                className="px-4 py-2 font-bold rounded-lg bg-[#ba1a1a] text-white hover:bg-[#93000a] transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

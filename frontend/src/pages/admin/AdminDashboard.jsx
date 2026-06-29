@@ -1,27 +1,178 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function AdminDashboard() {
   const { t } = useLanguage()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/admin/analytics', {
+          headers: {
+            'x-auth-token': sessionStorage.getItem('greenkrt_token'),
+          },
+        })
+        if (res.ok) {
+          const result = await res.json()
+          setData(result)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAnalytics()
+  }, [])
+
+  // KPI Calculations
   const kpis = [
-    { label: t('admin_dashboard.active_farmers'), value: '12,480', icon: 'agriculture', trend: '+8% from last month', positive: true },
-    { label: t('admin_nav.orders'), value: '3,241', icon: 'shopping_cart', trend: '+12% from last month', positive: true },
-    { label: t('admin_dashboard.total_sales'), value: '₹18,40,200', icon: 'payments', trend: '+15% from last month', positive: true },
-    { label: t('admin_dashboard.pending_orders'), value: '47', icon: 'local_shipping', trend: 'Needs attention', positive: false },
-    { label: t('admin_dashboard.services_booked'), value: '23', icon: 'build', trend: 'Ongoing today', positive: true },
+    { 
+      label: t('admin_dashboard.active_farmers'), 
+      value: data ? data.kpis.totalFarmers.toLocaleString() : '...', 
+      icon: 'agriculture', 
+      trend: '+8% from last month', 
+      positive: true 
+    },
+    { 
+      label: t('admin_nav.orders'), 
+      value: data ? data.kpis.totalOrders.toLocaleString() : '...', 
+      icon: 'shopping_cart', 
+      trend: '+12% from last month', 
+      positive: true 
+    },
+    { 
+      label: t('admin_dashboard.total_sales'), 
+      value: data ? `₹${data.kpis.totalRevenue.toLocaleString()}` : '...', 
+      icon: 'payments', 
+      trend: '+15% from last month', 
+      positive: true 
+    },
+    { 
+      label: t('admin_dashboard.pending_orders'), 
+      value: data ? data.kpis.pendingDeliveries.toString() : '...', 
+      icon: 'local_shipping', 
+      trend: 'Needs attention', 
+      positive: false 
+    },
+    { 
+      label: t('admin_dashboard.services_booked'), 
+      value: data ? data.kpis.activeServices.toString() : '...', 
+      icon: 'build', 
+      trend: 'Ongoing today', 
+      positive: true 
+    },
   ]
 
-  const orders = [
-    { id: '#ORD-9021', farmer: 'Ramesh Singh', products: 'Urea, NPK...', amount: '₹4,200', status: 'Pending', statusColor: 'bg-[#cfe6c9] text-[#546850]' },
-    { id: '#ORD-9020', farmer: 'Suresh Patel', products: 'Neem Oil...', amount: '₹1,850', status: 'Delivered', statusColor: 'bg-[#22c55e] text-white' },
-    { id: '#ORD-9019', farmer: 'Kamal Hasan', products: 'Seeds, Tools...', amount: '₹6,300', status: 'In Progress', statusColor: 'bg-[#dbeafe] text-[#1e3a8a]' },
-    { id: '#ORD-9018', farmer: 'Vikas Reddy', products: 'Tractor Parts', amount: '₹12,000', status: 'Cancelled', statusColor: 'bg-[#ffdad6] text-[#93000a]' },
+  // Recent Orders table mapping
+  const orders = data ? data.recentOrders.map(o => {
+    const itemString = o.items.map(i => `${i.name} × ${i.quantity}`).join(', ')
+    let statusColor = 'bg-yellow-100 text-yellow-800'
+    if (o.status === 'Delivered') statusColor = 'bg-green-100 text-green-800'
+    else if (o.status === 'Shipped') statusColor = 'bg-blue-100 text-blue-800'
+    else if (o.status === 'Out for Delivery') statusColor = 'bg-purple-100 text-purple-800'
+    
+    return {
+      id: o.orderId,
+      farmer: o.user ? `${o.user.firstName} ${o.user.lastName}` : 'Unknown',
+      products: itemString || 'None',
+      amount: `₹${o.totalAmount.toLocaleString()}`,
+      status: o.status,
+      statusColor
+    }
+  }) : []
+
+  // Service bookings list mapping
+  const serviceBookings = data ? data.recentServices.map(s => {
+    let icon = 'agriculture'
+    if (s.serviceType === 'drone') icon = 'flight'
+    else if (s.serviceType === 'land') icon = 'straighten'
+    else if (s.serviceType?.toLowerCase().includes('soil')) icon = 'biotech'
+
+    const title = s.serviceType === 'drone' ? 'Drone Spraying' : (s.serviceType === 'land' ? 'Land Prep / Survey' : 'Soil Testing')
+    const dateStr = s.details?.date || ''
+    const timeStr = s.details?.time || ''
+    const detail = `${s.user ? s.user.firstName + ' ' + s.user.lastName : 'Farmer'} • ${dateStr} ${timeStr}`
+    
+    return {
+      id: s._id,
+      icon,
+      title,
+      detail
+    }
+  }) : []
+
+  // Dynamic Revenue Chart Heights
+  const maxRevenue = data?.monthlyRevenue 
+    ? Math.max(...data.monthlyRevenue.map(m => m.revenue), 1000) 
+    : 1000;
+  
+  const monthlyRevenueData = data?.monthlyRevenue ? data.monthlyRevenue.map((m, idx) => {
+    const isCurrentMonth = idx === data.monthlyRevenue.length - 1;
+    const heightPercent = Math.max(10, Math.round((m.revenue / maxRevenue) * 90));
+    return {
+      label: m.label,
+      h: `${heightPercent}%`,
+      color: isCurrentMonth 
+        ? 'bg-[#dce5d9] border border-dashed border-[#bccbb9]' 
+        : 'bg-[#22c55e]',
+      revenue: m.revenue
+    }
+  }) : [
+    { label: 'Jan', h: '50%', color: 'bg-[#22c55e]', revenue: 0 },
+    { label: 'Feb', h: '65%', color: 'bg-[#22c55e]', revenue: 0 },
+    { label: 'Mar', h: '35%', color: 'bg-[#22c55e]', revenue: 0 },
+    { label: 'Apr', h: '75%', color: 'bg-[#22c55e]', revenue: 0 },
+    { label: 'May', h: '85%', color: 'bg-[#22c55e]', revenue: 0 },
+    { label: 'Jun', h: '25%', color: 'bg-[#dce5d9] border border-dashed border-[#bccbb9]', revenue: 0 },
   ]
 
-  const serviceBookings = [
-    { icon: 'agriculture', title: 'Soil Testing', detail: 'Farm ID: F-102 • 10:00 AM' },
-    { icon: 'water_drop', title: 'Irrigation Setup', detail: 'Farm ID: F-44 • 01:30 PM' },
-    { icon: 'build', title: 'Equipment Repair', detail: 'Farm ID: F-89 • 04:00 PM' },
+  // Dynamic Donut Chart conic-gradient calculation
+  const categoryColors = {
+    Fertilizers: '#22c55e',
+    Pesticides: '#4ae176',
+    Micronutrients: '#cfe6c9',
+    Seeds: '#dce5d9',
+    Others: '#a1b39c'
+  }
+
+  const categoryShareData = data?.categoryShare || [
+    { category: 'Fertilizers', percentage: 45 },
+    { category: 'Pesticides', percentage: 28 },
+    { category: 'Micronutrients', percentage: 17 },
+    { category: 'Seeds', percentage: 10 },
   ]
+
+  let accumPercent = 0
+  const gradientParts = []
+  categoryShareData.forEach(item => {
+    const start = accumPercent
+    accumPercent += item.percentage
+    const end = accumPercent
+    const color = categoryColors[item.category] || '#a1b39c'
+    gradientParts.push(`${color} ${start}% ${end}%`)
+  })
+  
+  if (accumPercent < 100 && gradientParts.length > 0) {
+    const lastColor = categoryColors[categoryShareData[categoryShareData.length - 1].category] || '#a1b39c'
+    gradientParts.push(`${lastColor} ${accumPercent}% 100%`)
+  }
+
+  const conicGradient = gradientParts.length > 0 
+    ? `conic-gradient(${gradientParts.join(', ')})` 
+    : 'conic-gradient(#22c55e 0% 100%)'
+
+  let topCategory = 'None'
+  let topCategoryVal = -1
+  categoryShareData.forEach(item => {
+    if (item.percentage > topCategoryVal) {
+      topCategoryVal = item.percentage
+      topCategory = item.category
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -50,45 +201,43 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Bar Chart */}
         <div className="lg:col-span-7 bg-white border border-[#bccbb9] rounded-lg p-4">
-          <h2 className="font-semibold text-[#161d16] mb-4">Monthly Revenue (2025)</h2>
+          <h2 className="font-semibold text-[#161d16] mb-4">Monthly Revenue ({new Date().getFullYear()})</h2>
           <div className="h-56 bg-[#f3fcef] flex items-end justify-around p-4 rounded border border-[#bccbb9]/30">
-            {[
-              { label: 'Jan', h: '50%', color: 'bg-[#22c55e]' },
-              { label: 'Feb', h: '65%', color: 'bg-[#22c55e]' },
-              { label: 'Mar', h: '35%', color: 'bg-[#22c55e]' },
-              { label: 'Apr', h: '75%', color: 'bg-[#22c55e]' },
-              { label: 'May', h: '85%', color: 'bg-[#d97706]' },
-              { label: 'Jun', h: '25%', color: 'bg-[#dce5d9] border border-dashed border-[#bccbb9]' },
-            ].map(bar => (
-              <div key={bar.label} className="flex flex-col items-center gap-1 flex-1">
-                <div className={`w-10 ${bar.color} rounded-t`} style={{ height: bar.h }}></div>
+            {monthlyRevenueData.map((bar, idx) => (
+              <div key={idx} className="flex flex-col items-center gap-1 flex-1 group relative">
+                {/* Tooltip to show revenue value */}
+                <div className="absolute bottom-full mb-1 hidden group-hover:block bg-[#2f3131] text-white text-[10px] py-1 px-2 rounded whitespace-nowrap shadow z-10">
+                  ₹{bar.revenue.toLocaleString()}
+                </div>
+                <div className={`w-10 ${bar.color} rounded-t transition-all duration-500`} style={{ height: bar.h }}></div>
                 <span className="text-xs text-[#3d4a3d]">{bar.label}</span>
               </div>
             ))}
           </div>
         </div>
+        
         {/* Donut Chart */}
         <div className="lg:col-span-5 bg-white border border-[#bccbb9] rounded-lg p-4">
           <h2 className="font-semibold text-[#161d16] mb-4">Orders by Category</h2>
           <div className="flex items-center justify-center h-48">
-            <div className="relative w-40 h-40 rounded-full flex items-center justify-center"
-              style={{ background: 'conic-gradient(#22c55e 0% 45%, #4ae176 45% 73%, #cfe6c9 73% 90%, #dce5d9 90% 100%)' }}>
+            <div 
+              className="relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 shadow-inner"
+              style={{ background: conicGradient }}
+            >
               <div className="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center">
                 <span className="text-xs text-[#3d4a3d]">Top Cat</span>
-                <span className="text-sm font-bold text-[#161d16]">Fertilizers</span>
+                <span className="text-sm font-bold text-[#161d16] truncate max-w-[120px] px-2">{topCategory}</span>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap justify-center gap-3 mt-2">
-            {[
-              { color: '#22c55e', label: 'Fertilizers (45%)' },
-              { color: '#4ae176', label: 'Pesticides (28%)' },
-              { color: '#cfe6c9', label: 'Micro (17%)' },
-              { color: '#dce5d9', label: 'Others (10%)' },
-            ].map(item => (
-              <div key={item.label} className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full" style={{ background: item.color }}></div>
-                <span className="text-xs text-[#3d4a3d]">{item.label}</span>
+            {categoryShareData.map(item => (
+              <div key={item.category} className="flex items-center gap-1">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ background: categoryColors[item.category] || '#a1b39c' }}
+                ></div>
+                <span className="text-xs text-[#3d4a3d]">{item.category} ({item.percentage}%)</span>
               </div>
             ))}
           </div>
@@ -100,7 +249,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-8 bg-white border border-[#bccbb9] rounded-lg overflow-hidden">
           <div className="p-4 border-b border-[#bccbb9] flex justify-between items-center bg-[#edf6ea]">
             <h2 className="font-semibold text-[#161d16]">{t('admin_dashboard.recent_orders')}</h2>
-            <button className="text-[#006e2f] text-sm font-semibold hover:underline">View All</button>
+            <Link to="/admin/orders" className="text-[#006e2f] text-sm font-semibold hover:underline">View All</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -112,36 +261,62 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map(o => (
-                  <tr key={o.id} className="border-b border-[#bccbb9]/30 hover:bg-[#edf6ea] transition-colors text-sm">
-                    <td className="p-3 font-bold text-[#161d16]">{o.id}</td>
-                    <td className="p-3">{o.farmer}</td>
-                    <td className="p-3 text-[#3d4a3d]">{o.products}</td>
-                    <td className="p-3 font-semibold">{o.amount}</td>
-                    <td className="p-3"><span className={`px-2 py-1 rounded text-xs font-semibold ${o.statusColor}`}>{o.status}</span></td>
-                    <td className="p-3"><button className="text-[#006e2f] hover:underline text-xs font-semibold">Details</button></td>
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="p-6 text-center text-sm text-[#3d4a3d]">Loading recent orders...</td>
                   </tr>
-                ))}
+                ) : orders.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="p-6 text-center text-sm text-[#3d4a3d]">No recent orders found.</td>
+                  </tr>
+                ) : (
+                  orders.map(o => (
+                    <tr key={o.id} className="border-b border-[#bccbb9]/30 hover:bg-[#edf6ea] transition-colors text-sm">
+                      <td className="p-3 font-bold text-[#161d16]">{o.id}</td>
+                      <td className="p-3">{o.farmer}</td>
+                      <td className="p-3 text-[#3d4a3d] truncate max-w-[200px]" title={o.products}>{o.products}</td>
+                      <td className="p-3 font-semibold">{o.amount}</td>
+                      <td className="p-3"><span className={`px-2 py-1 rounded text-xs font-semibold ${o.statusColor}`}>{o.status}</span></td>
+                      <td className="p-3">
+                        <Link to="/admin/orders" className="text-[#006e2f] hover:underline text-xs font-semibold">
+                          Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
+        
         <div className="lg:col-span-4 bg-white border border-[#bccbb9] rounded-lg flex flex-col">
-          <div className="p-4 border-b border-[#bccbb9] bg-[#edf6ea]">
-            <h2 className="font-semibold text-[#161d16]">Today's Service Bookings</h2>
+          <div className="p-4 border-b border-[#bccbb9] bg-[#edf6ea] flex justify-between items-center">
+            <h2 className="font-semibold text-[#161d16]">Recent Service Bookings</h2>
+            <Link to="/admin/services" className="text-[#006e2f] text-sm font-semibold hover:underline">View All</Link>
           </div>
-          <div className="p-4 flex flex-col gap-3">
-            {serviceBookings.map(s => (
-              <div key={s.title} className="flex items-start gap-3 p-3 border border-[#bccbb9]/50 rounded-lg hover:border-[#006e2f] transition-colors cursor-pointer bg-[#f3fcef]">
-                <div className="bg-[#cfe6c9] text-[#546850] p-2 rounded-full">
-                  <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-[#161d16]">{s.title}</div>
-                  <div className="text-xs text-[#3d4a3d]">{s.detail}</div>
-                </div>
-              </div>
-            ))}
+          <div className="p-4 flex flex-col gap-3 flex-1 overflow-y-auto max-h-[350px]">
+            {loading ? (
+              <div className="text-center p-4 text-sm text-[#3d4a3d]">Loading service bookings...</div>
+            ) : serviceBookings.length === 0 ? (
+              <div className="text-center p-4 text-sm text-[#3d4a3d]">No service bookings found.</div>
+            ) : (
+              serviceBookings.map(s => (
+                <Link 
+                  to="/admin/services" 
+                  key={s.id} 
+                  className="flex items-start gap-3 p-3 border border-[#bccbb9]/50 rounded-lg hover:border-[#006e2f] transition-colors cursor-pointer bg-[#f3fcef]"
+                >
+                  <div className="bg-[#cfe6c9] text-[#546850] p-2 rounded-full">
+                    <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-[#161d16]">{s.title}</div>
+                    <div className="text-xs text-[#3d4a3d]">{s.detail}</div>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -152,21 +327,27 @@ export default function AdminDashboard() {
           <div className="bg-[#f59e0b] text-white p-2 rounded-full"><span className="material-symbols-outlined">warning</span></div>
           <div>
             <div className="text-sm font-bold text-[#92400e]">{t('admin_dashboard.inventory_alerts')}</div>
-            <div className="text-xs text-[#b45309]">12 items below threshold.</div>
+            <div className="text-xs text-[#b45309]">
+              {data ? `${data.kpis.lowStockCount} items below threshold.` : 'Loading...'}
+            </div>
           </div>
         </div>
         <div className="bg-[#edf6ea] border border-[#22c55e]/30 rounded-lg p-4 flex items-center gap-4">
           <div className="bg-[#22c55e] text-white p-2 rounded-full"><span className="material-symbols-outlined">person_add</span></div>
           <div>
             <div className="text-sm font-bold text-[#161d16]">New Registrations</div>
-            <div className="text-xs text-[#3d4a3d]">+45 farmers joined this week.</div>
+            <div className="text-xs text-[#3d4a3d]">
+              {data ? `+${data.newRegistrations} farmers joined this week.` : 'Loading...'}
+            </div>
           </div>
         </div>
         <div className="bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-lg p-4 flex items-center gap-4">
           <div className="bg-[#ba1a1a] text-white p-2 rounded-full"><span className="material-symbols-outlined">inventory_2</span></div>
           <div>
             <div className="text-sm font-bold text-[#93000a]">Unassigned Orders</div>
-            <div className="text-xs text-[#ba1a1a]">8 orders need delivery partners.</div>
+            <div className="text-xs text-[#ba1a1a]">
+              {data ? `${data.unassignedOrders} orders need delivery partners.` : 'Loading...'}
+            </div>
           </div>
         </div>
       </div>

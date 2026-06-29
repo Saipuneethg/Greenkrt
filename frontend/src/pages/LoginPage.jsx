@@ -43,33 +43,6 @@ export default function LoginPage() {
     }
   }
 
-  // Quick demo access — logs in using seeded backend credentials
-  const handleDemoAccess = async (role) => {
-    setError('')
-    setLoading(true)
-    const email = role === 'admin' ? 'admin@greenkrt.com' : 'farmer@greenkrt.com';
-    const password = role === 'admin' ? 'adminpassword' : 'farmerpassword';
-
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: email, password }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        sessionStorage.setItem('greenkrt_token', data.token)
-        login(data.user, data.token)
-        navigate(data.user.role === 'admin' ? '/admin' : '/dashboard')
-      } else {
-        setError(data.message)
-      }
-    } catch {
-      setError('Unable to connect to server. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen flex bg-[#f9f9f9] font-sans">
@@ -78,16 +51,16 @@ export default function LoginPage() {
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#00C853 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
         <div className="relative z-10">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
-            <span className="font-bold text-2xl text-white">GreenKrt</span>
+            <img src="/logo.jpeg" alt={t('auth.logo_alt')} className="w-8 h-8 rounded-full object-cover" />
+            <span className="font-bold text-2xl text-white">{t('auth.brand_name')}</span>
           </div>
         </div>
         <div className="relative z-10">
           <blockquote className="text-3xl font-bold text-white leading-tight mb-6" style={{fontFamily:'Lora,serif'}}>
-            <span className="italic text-[#00C853]">"Smart farming</span><br/>
-            starts with better<br/>decisions."
+            <span className="italic text-[#00C853]">{t('auth.quote_part1')}</span><br/>
+            {t('auth.quote_part2')}<br/>{t('auth.quote_part3')}
           </blockquote>
-          <p className="text-white/60 text-lg">Join 12,000+ farmers transforming their yield with GreenKrt.</p>
+          <p className="text-white/60 text-lg">{t('auth.join_msg')}</p>
         </div>
         <div className="relative z-10 grid grid-cols-3 gap-4">
           {[
@@ -114,8 +87,8 @@ export default function LoginPage() {
 
         {/* Mobile Brand */}
         <div className="lg:hidden flex items-center gap-2 mb-10">
-          <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
-          <span className="font-bold text-2xl text-[#0d631b]">GreenKrt</span>
+          <img src="/logo.jpeg" alt={t('auth.logo_alt')} className="w-8 h-8 rounded-full object-cover" />
+          <span className="font-bold text-2xl text-[#0d631b]">{t('auth.brand_name')}</span>
         </div>
 
         <div className="w-full max-w-md">
@@ -212,24 +185,6 @@ export default function LoginPage() {
             <Link to="/signup" className="text-[#0d631b] font-semibold hover:underline">{t('auth.create_one')}</Link>
           </p>
 
-          {/* Demo Access */}
-          <div className="mt-6 p-4 bg-[#f3f3f3] rounded-xl border border-[#bfcaba]">
-            <p className="text-xs font-bold text-[#1a1c1c] mb-3">Quick Demo Access:</p>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => handleDemoAccess('farmer')}
-                className="px-4 py-2 bg-[#0d631b] text-white text-xs font-semibold rounded-lg hover:opacity-90"
-              >
-                Farmer Dashboard
-              </button>
-              <button
-                onClick={() => handleDemoAccess('admin')}
-                className="px-4 py-2 bg-[#2f3131] text-white text-xs font-semibold rounded-lg hover:opacity-90"
-              >
-                Admin Panel
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

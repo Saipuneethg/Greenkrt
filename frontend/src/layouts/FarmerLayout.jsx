@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useData } from '../context/DataContext'
+import { useCart } from '../context/CartContext'
+import { createPortal } from 'react-dom'
 
 const LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -24,7 +26,48 @@ export default function FarmerLayout() {
   const { user, logout } = useAuth()
   const { language, setLanguage, t } = useLanguage()
   const { fetchProducts, fetchServices } = useData()
+  const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, isCartOpen, setIsCartOpen } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [cartError, setCartError] = useState('')
+  const [cartSuccess, setCartSuccess] = useState('')
+
+  const handleCheckout = async () => {
+    setCartError('')
+    setCartSuccess('')
+    try {
+      const res = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': sessionStorage.getItem('greenkrt_token'),
+        },
+        body: JSON.stringify({
+          items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+          })),
+          totalAmount: cartTotal,
+        }),
+      })
+
+      if (res.ok) {
+        setCartSuccess(t('marketplace.order_success'))
+        clearCart()
+        setTimeout(() => {
+          setIsCartOpen(false)
+          setCartSuccess('')
+          navigate('/dashboard/orders')
+        }, 1500)
+        await fetchProducts() // Refresh stock levels
+      } else {
+        const errorData = await res.json()
+        setCartError(errorData.message || t('marketplace.checkout_failed'))
+      }
+    } catch {
+      setCartError(t('marketplace.server_error'))
+    }
+  }
 
   useEffect(() => {
     fetchProducts()
@@ -105,7 +148,7 @@ export default function FarmerLayout() {
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] text-[20px]">search</span>
               <input
                 className="pl-10 pr-4 py-2 bg-[#f3f3f3] border border-[#bfcaba] rounded-full text-sm focus:outline-none focus:border-[#0d631b] w-64 h-[48px]"
-                placeholder="Search orders, services..."
+                placeholder={t('nav.search_placeholder')}
               />
             </div>
           </div>
@@ -160,6 +203,75 @@ export default function FarmerLayout() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Global Cart Side Panel */}
+      {isCartOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex justify-end items-start">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setIsCartOpen(false)}></div>
+          <div className="relative w-[calc(100%-2rem)] md:w-full max-w-md bg-white shadow-2xl flex flex-col overflow-hidden transition-transform transform translate-x-0 h-fit max-h-[calc(100vh-2rem)] m-4 rounded-2xl">
+            <div className="p-4 border-b flex justify-between items-center bg-[#f3fcef] shrink-0">
+              <h2 className="text-xl font-bold flex items-center gap-2 text-[#006e2f]"><span className="material-symbols-outlined">shopping_cart</span> {t('marketplace.your_cart') || 'Your Cart'}</h2>
+              <button onClick={() => setIsCartOpen(false)} className="material-symbols-outlined text-gray-500 hover:text-black">close</button>
+            </div>
+            
+            <div className="overflow-y-auto min-h-0 p-4 space-y-4">
+              {cart.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center text-gray-400">
+                  <span className="material-symbols-outlined text-6xl mb-4">remove_shopping_cart</span>
+                  <p>{t('marketplace.empty_cart') || 'Your cart is empty'}</p>
+                </div>
+              ) : (
+                cart.map(item => (
+                  <div key={item.id} className="flex gap-4 border-b pb-4">
+                    <div className="w-16 h-16 bg-[#f3f3f3] rounded flex items-center justify-center text-3xl">{item.image}</div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-[#1a1c1c]">{t('products.' + item.id) !== 'products.' + item.id ? t('products.' + item.id) : item.name}</h4>
+                      <div className="text-xs text-[#40493d] mb-2">{item.unit}</div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-[#0d631b]">₹{item.price * item.quantity}</span>
+                        <div className="flex items-center gap-2 bg-[#f3fcef] rounded-full px-2 py-1">
+                          <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white text-[#006e2f] font-bold">-</button>
+                          <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white text-[#006e2f] font-bold">+</button>
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="material-symbols-outlined text-gray-400 hover:text-red-500 text-lg self-start">delete</button>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {cart.length > 0 && (
+              <div className="p-4 border-t bg-white shrink-0 space-y-3">
+                {cartError && (
+                  <div className="p-2 bg-red-50 text-red-700 text-xs rounded border border-red-200">
+                    {cartError}
+                  </div>
+                )}
+                {cartSuccess && (
+                  <div className="p-2 bg-[#f3fcef] text-[#0d631b] text-xs rounded border border-[#9cf49c]">
+                    {cartSuccess}
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-lg">
+                  <span>{t('marketplace.total_bill') || 'Total'}</span>
+                  <span className="text-[#0d631b]">₹{cartTotal}</span>
+                </div>
+                <div className="flex gap-3 mt-2">
+                  <button onClick={clearCart} className="flex-1 h-11 border border-[#ba1a1a] text-[#ba1a1a] rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#fff0f0] transition-colors">
+                    {t('marketplace.clear_cart') || 'Clear'}
+                  </button>
+                  <button onClick={handleCheckout} className="flex-1 h-11 bg-[#0d631b] text-white rounded-lg text-xs font-bold uppercase tracking-widest shadow-sm hover:opacity-90 transition-colors">
+                    {t('marketplace.checkout') || 'Checkout'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

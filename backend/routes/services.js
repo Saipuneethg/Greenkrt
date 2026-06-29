@@ -176,4 +176,39 @@ router.put('/bookings/:id/status', [auth, admin], async (req, res) => {
   }
 });
 
+// @route   PUT /api/services/bookings/:id/cancel
+// @desc    Cancel a booking by the farmer
+// @access  Private
+router.put('/bookings/:id/cancel', auth, async (req, res) => {
+  try {
+    let booking = await Booking.findOne({ bookingId: req.params.id, user: req.user.id });
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    if (booking.status === 'Cancelled' || booking.status === 'Completed') {
+      return res.status(400).json({ message: 'Booking cannot be cancelled at this stage' });
+    }
+
+    if (booking.details && booking.details.date && booking.details.time) {
+      const bookedDateTime = new Date(`${booking.details.date}T${booking.details.time}`);
+      const now = new Date();
+      const diffMs = bookedDateTime - now;
+      const hoursUntil = diffMs / (1000 * 60 * 60);
+
+      if (hoursUntil <= 1 && hoursUntil >= 0) {
+        return res.status(400).json({ message: 'Cannot cancel booking within 1 hour of scheduled time.' });
+      }
+      if (hoursUntil < 0) {
+        return res.status(400).json({ message: 'Cannot cancel past bookings.' });
+      }
+    }
+
+    booking.status = 'Cancelled';
+    await booking.save();
+    res.json(booking);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;

@@ -21,7 +21,7 @@ const SoilTestSchema = new mongoose.Schema({
   cropPlanned: String,
   status: {
     type: String,
-    enum: ['Pending', 'Sample Collected', 'In Lab', 'Completed'],
+    enum: ['Pending', 'Sample Collected', 'In Lab', 'Completed', 'Rejected'],
     default: 'Pending',
   },
   reportUrl: {
@@ -36,6 +36,8 @@ const SoilTestSchema = new mongoose.Schema({
     phosphorus: { type: Number, default: 0 },
     potassium: { type: Number, default: 0 },
     recommendations: { type: [String], default: [] },
+    todaysAction: { type: String, default: null },
+    phases: { type: mongoose.Schema.Types.Mixed, default: null }
   },
 }, { timestamps: true });
 

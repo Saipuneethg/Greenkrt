@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useLanguage } from '../../context/LanguageContext'
@@ -7,52 +8,75 @@ import { useData } from '../../context/DataContext'
 export default function FertilizerMarketplace() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const { cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isCartOpen, setIsCartOpen } = useCart()
+  const { cart, addToCart, updateQuantity, cartCount, isCartOpen, setIsCartOpen } = useCart()
   const { t, language } = useLanguage()
-  const { products, fetchProducts } = useData()
+  const { products } = useData()
 
-  const handleCheckout = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': sessionStorage.getItem('greenkrt_token'),
-        },
-        body: JSON.stringify({
-          items: cart.map(item => ({
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity,
-          })),
-          totalAmount: cartTotal,
-        }),
-      })
+  // Track the selected category by index (0 for All, 1 for Fertilizers, etc.) to prevent translation mismatch
+  const [categoryIndex, setCategoryIndex] = useState(0)
 
-      if (res.ok) {
-        alert('Order placed successfully!')
-        clearCart()
-        setIsCartOpen(false)
-        await fetchProducts() // Refresh stock levels
-        navigate('/dashboard/orders')
-      } else {
-        const errorData = await res.json()
-        alert(errorData.message || 'Checkout failed. Please try again.')
-      }
-    } catch {
-      alert('Error connecting to server. Please try again.')
-    }
-  }
-  const [category, setCategory] = useState(language === 'te' ? 'అన్నీ' : 'All')
-
-  // We need to keep the "en" categories list as fallback for the mapping logic if we want to filter by English names in backend,
-  // but since we filter by exact match, we just use the localized category list.
   const categories = t('marketplace.categories') || ['All', 'Fertilizers', 'Pesticides', 'Micronutrients', 'Seeds']
+  const englishCategories = ['All', 'Fertilizers', 'Pesticides', 'Micronutrients', 'Seeds']
+  const selectedEnglishCategory = englishCategories[categoryIndex] || 'All'
 
-  const filtered = products.filter(p =>
-    (category === categories[0] || p.category === category) &&
-    p.name.toLowerCase().includes(search.toLowerCase())
-  )
+  // Translation helpers for dynamic product attributes
+  const translateBadge = (badge) => {
+    if (!badge) return ''
+    if (language === 'te') {
+      const badgeMap = {
+        'Best Seller': 'బెస్ట్ సెల్లర్',
+        'AI Recommended': 'AI సిఫార్సు చేసినవి',
+        'Organic': 'సేంద్రీయ',
+        'Certified': 'సర్టిఫైడ్'
+      }
+      return badgeMap[badge] || badge
+    }
+    return badge
+  }
+
+  const translateUnit = (unit) => {
+    if (!unit) return ''
+    if (language === 'te') {
+      return unit
+        .replace('50kg bag', '50 కిలోల బస్తా')
+        .replace('25kg bag', '25 కిలోల బస్తా')
+        .replace('30kg bag', '30 కిలోల బస్తా')
+        .replace('10kg bag', '10 కిలోల బస్తా')
+        .replace('5kg bag', '5 కిలోల బస్తా')
+        .replace('1L bottle', '1 లీటరు సీసా')
+        .replace('500ml', '500 మి.లీ')
+        .replace('sample', 'నమూనా')
+    }
+    return unit
+  }
+
+  const translateStock = (stock) => {
+    if (typeof stock === 'number') {
+      return language === 'te' ? `${stock} స్టాక్ ఉంది` : `${stock} items left`
+    }
+    if (language === 'te') {
+      const stockMap = {
+        'In Stock': 'స్టాక్ ఉంది',
+        'Low Stock': 'తక్కువ స్టాక్ ఉంది',
+        'Out of Stock': 'స్టాక్ లేదు'
+      }
+      return stockMap[stock] || stock
+    }
+    return stock
+  }
+
+  const filtered = products.filter(p => {
+    const matchesCategory = selectedEnglishCategory === 'All' || p.category === selectedEnglishCategory
+    
+    // Resolve product name translation
+    const translatedName = t('products.' + p.id) !== 'products.' + p.id ? t('products.' + p.id) : p.name
+    
+    // Support searching by both English name and Telugu name
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
+                          translatedName.toLowerCase().includes(search.toLowerCase())
+                          
+    return matchesCategory && matchesSearch
+  })
 
   return (
     <div>
@@ -61,20 +85,22 @@ export default function FertilizerMarketplace() {
         <p className="text-[#40493d] text-sm">{t('marketplace.subtitle')}</p>
       </div>
 
-      {/* Fixed Cart Button */}
-      <button
-        onClick={() => setIsCartOpen(true)}
-        className="fixed top-6 right-6 z-40 h-[40px] px-4 rounded-full bg-[#0d631b] text-white flex items-center gap-2 font-semibold text-sm shadow-lg hover:bg-[#0a4f15] transition-all"
-        style={{ boxShadow: '0 4px 24px rgba(13,99,27,0.35)' }}
-      >
-        <span className="material-symbols-outlined text-current">shopping_cart</span>
-        {t('marketplace.cart')}
-        {cartCount > 0 && (
-          <span className="w-6 h-6 rounded-full bg-white text-[#0d631b] text-xs flex items-center justify-center font-bold ml-1">
-            {cartCount}
-          </span>
-        )}
-      </button>
+      {/* Fixed Cart Button (Portaled to body to escape transform container) */}
+      {!isCartOpen && createPortal(
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed top-[88px] right-6 md:right-8 z-50 h-[48px] px-5 rounded-full bg-[#0d631b] text-white flex flex-row items-center justify-center gap-2 font-bold text-sm hover:-translate-y-1 transition-all shadow-[0_8px_24px_rgba(13,99,27,0.4)] whitespace-nowrap"
+        >
+          <span className="material-symbols-outlined text-[20px] leading-none">shopping_cart</span>
+          <span className="leading-none">{t('marketplace.cart')}</span>
+          {cartCount > 0 && (
+            <span className="min-w-[24px] h-[24px] px-1 rounded-full bg-white text-[#0d631b] text-xs flex items-center justify-center font-black ml-1 leading-none">
+              {cartCount}
+            </span>
+          )}
+        </button>,
+        document.body
+      )}
 
       {/* Search + Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -88,11 +114,11 @@ export default function FertilizerMarketplace() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {categories.map(c => (
+          {categories.map((c, index) => (
             <button
               key={c}
-              onClick={() => setCategory(c)}
-              className={`px-4 h-[40px] rounded-full text-sm font-semibold transition-colors ${category === c ? 'bg-[#0d631b] text-white' : 'bg-white border border-[#bfcaba] text-[#40493d] hover:border-[#0d631b]'}`}
+              onClick={() => setCategoryIndex(index)}
+              className={`px-4 h-[40px] rounded-full text-sm font-semibold transition-colors ${categoryIndex === index ? 'bg-[#0d631b] text-white' : 'bg-white border border-[#bfcaba] text-[#40493d] hover:border-[#0d631b]'}`}
             >{c}</button>
           ))}
         </div>
@@ -100,82 +126,41 @@ export default function FertilizerMarketplace() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filtered.map(p => (
-          <div key={p.id} className="bg-white rounded-xl border border-[#bfcaba] shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
-            <div className="h-32 bg-[#f3f3f3] flex items-center justify-center text-5xl shrink-0">{p.image}</div>
-            <div className="p-4 flex flex-col flex-1">
-              <div className="mb-3">
-                {p.badge && <span className={`text-xs font-bold px-2 py-1 rounded-full mb-2 inline-block ${p.badge === 'AI Recommended' ? 'bg-[#9cf49c] text-[#19722b]' : p.badge === 'Organic' ? 'bg-[#ffddb5] text-[#643f00]' : 'bg-[#e8e8e8] text-[#40493d]'}`}>{p.badge}</span>}
-                <h3 className="font-bold text-sm text-[#1a1c1c] mb-1">{p.name}</h3>
-                <p className="text-xs text-[#40493d] mb-1">{p.brand} • {p.unit}</p>
-                <p className={`text-xs font-semibold ${p.stock === 'Low Stock' ? 'text-[#ba1a1a]' : 'text-[#0d631b]'}`}>{p.stock}</p>
-              </div>
-              <div className="flex items-center justify-between mt-auto">
-                <span className="text-lg font-bold text-[#0d631b]">{typeof p.price === 'number' ? `₹${p.price}` : p.price}</span>
-                <button onClick={() => addToCart(p)} className="h-[36px] px-4 rounded-lg bg-[#0d631b] text-white text-xs font-bold hover:opacity-90 transition-opacity">{t('marketplace.add_to_cart')}</button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Cart Side Panel */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end items-start">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsCartOpen(false)}></div>
-          <div className="relative w-[calc(100%-2rem)] md:w-full max-w-md bg-white shadow-2xl flex flex-col overflow-hidden transition-transform transform translate-x-0 h-fit max-h-[calc(100vh-2rem)] m-4 rounded-2xl">
-            <div className="p-4 border-b flex justify-between items-center bg-[#f3fcef] shrink-0">
-              <h2 className="text-xl font-bold flex items-center gap-2 text-[#006e2f]"><span className="material-symbols-outlined">shopping_cart</span> {t('marketplace.your_cart')}</h2>
-              <button onClick={() => setIsCartOpen(false)} className="material-symbols-outlined text-gray-500 hover:text-black">close</button>
-            </div>
-            
-            <div className="overflow-y-auto min-h-0 p-4 space-y-4">
-              {cart.length === 0 ? (
-                <div className="py-12 flex flex-col items-center justify-center text-gray-400">
-                  <span className="material-symbols-outlined text-6xl mb-4">remove_shopping_cart</span>
-                  <p>{t('marketplace.empty_cart')}</p>
+        {filtered.map(p => {
+          const cartItem = cart.find(item => item.id === p.id);
+          const translatedName = t('products.' + p.id) !== 'products.' + p.id ? t('products.' + p.id) : p.name;
+          
+          return (
+            <div key={p.id} className="bg-white rounded-xl border border-[#bfcaba] shadow-sm overflow-hidden flex flex-col">
+              <div className="h-32 bg-[#f3f3f3] flex items-center justify-center text-5xl shrink-0">{p.image}</div>
+              <div className="p-4 flex flex-col flex-1">
+                <div className="mb-3">
+                  {p.badge && (
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full mb-2 inline-block ${p.badge === 'AI Recommended' ? 'bg-[#9cf49c] text-[#19722b]' : p.badge === 'Organic' ? 'bg-[#ffddb5] text-[#643f00]' : 'bg-[#e8e8e8] text-[#40493d]'}`}>
+                      {translateBadge(p.badge)}
+                    </span>
+                  )}
+                  <h3 className="font-bold text-sm text-[#1a1c1c] mb-1">{translatedName}</h3>
+                  <p className="text-xs text-[#40493d] mb-1">{p.brand} • {translateUnit(p.unit)}</p>
+                  <p className={`text-xs font-semibold ${p.stock === 'Low Stock' ? 'text-[#ba1a1a]' : 'text-[#0d631b]'}`}>{translateStock(p.stock)}</p>
                 </div>
-              ) : (
-                cart.map(item => (
-                  <div key={item.id} className="flex gap-4 border-b pb-4">
-                    <div className="w-16 h-16 bg-[#f3f3f3] rounded flex items-center justify-center text-3xl">{item.image}</div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-sm text-[#1a1c1c]">{item.name}</h4>
-                      <div className="text-xs text-[#40493d] mb-2">{item.unit}</div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-[#0d631b]">₹{item.price * item.quantity}</span>
-                        <div className="flex items-center gap-2 bg-[#f3fcef] rounded-full px-2 py-1">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white text-[#006e2f] font-bold">-</button>
-                          <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-white text-[#006e2f] font-bold">+</button>
-                        </div>
-                      </div>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-lg font-bold text-[#0d631b]">{typeof p.price === 'number' ? `₹${p.price}` : p.price}</span>
+                  {cartItem ? (
+                    <div className="flex items-center gap-3 bg-[#f3fcef] rounded-lg px-2 h-[36px] border border-[#0d631b]">
+                      <button onClick={() => updateQuantity(p.id, -1)} className="w-6 h-6 flex items-center justify-center text-[#0d631b] font-bold text-lg hover:bg-white rounded transition-colors">-</button>
+                      <span className="text-sm font-bold text-[#0d631b] w-4 text-center">{cartItem.quantity}</span>
+                      <button onClick={() => updateQuantity(p.id, 1)} className="w-6 h-6 flex items-center justify-center text-[#0d631b] font-bold text-lg hover:bg-white rounded transition-colors">+</button>
                     </div>
-                    <button onClick={() => removeFromCart(item.id)} className="material-symbols-outlined text-gray-400 hover:text-red-500 text-lg self-start">delete</button>
-                  </div>
-                ))
-              )}
-            </div>
-            
-            {cart.length > 0 && (
-              <div className="p-4 border-t bg-white shrink-0 space-y-3">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>{t('marketplace.total_bill')}</span>
-                  <span className="text-[#0d631b]">₹{cartTotal}</span>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={clearCart} className="flex-1 h-12 border-2 border-[#ba1a1a] text-[#ba1a1a] rounded-lg font-bold uppercase tracking-wider hover:bg-[#ba1a1a] hover:text-white transition-colors">
-                    Clear Cart
-                  </button>
-                  <button onClick={handleCheckout} className="flex-1 h-12 bg-[#0d631b] text-white rounded-lg font-bold uppercase tracking-wider hover:opacity-90">
-                    {t('marketplace.checkout')}
-                  </button>
+                  ) : (
+                    <button onClick={() => addToCart(p)} className="h-[36px] px-4 rounded-lg bg-[#0d631b] text-white text-xs font-bold hover:opacity-90 transition-opacity">{t('marketplace.add_to_cart')}</button>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

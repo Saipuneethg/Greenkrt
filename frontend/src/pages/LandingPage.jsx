@@ -39,8 +39,8 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 flex justify-between items-center w-full px-4 md:px-16 h-20 bg-[#f9f9f9] border-b border-[#bfcaba] shadow-sm">
         <div className="flex items-center gap-2 text-[#0d631b] font-bold text-xl">
-          <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
-          <span>GreenKrt</span>
+          <img src="/logo.jpeg" alt={t('auth.logo_alt')} className="w-8 h-8 rounded-full object-cover" />
+          <span>{t('auth.brand_name')}</span>
         </div>
         <div className="hidden lg:flex items-center gap-8">
           {[
@@ -255,8 +255,8 @@ export default function LandingPage() {
       <footer className="bg-[#0a1a0a] text-white/60 py-12 px-4 md:px-16">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-6 h-6 rounded-full object-cover" />
-            <span className="font-bold text-white text-lg">GreenKrt</span>
+            <img src="/logo.jpeg" alt={t('auth.logo_alt')} className="w-6 h-6 rounded-full object-cover" />
+            <span className="font-bold text-white text-lg">{t('auth.brand_name')}</span>
           </div>
           <div className="flex gap-8 text-sm">
             {['Privacy Policy','Terms of Service','Contact Us'].map(link => (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function OrderManagement() {
@@ -8,6 +9,13 @@ export default function OrderManagement() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All Statuses')
+  const [modalConfig, setModalConfig] = useState({ show: false, message: '', isError: false })
+
+  const showMessage = (message, isError = false) => {
+    setModalConfig({ show: true, message, isError })
+    // Auto-close after 3 seconds for convenience
+    setTimeout(() => setModalConfig({ show: false, message: '', isError: false }), 3000)
+  }
 
   const fetchOrders = async () => {
     try {
@@ -62,11 +70,12 @@ export default function OrderManagement() {
       })
       if (res.ok) {
         fetchOrders()
+        showMessage('Order status updated successfully!')
       } else {
-        alert('Failed to update status.')
+        showMessage('Failed to update status.', true)
       }
     } catch {
-      alert('Error connecting to server.')
+      showMessage('Error connecting to server.', true)
     }
   }
 
@@ -83,12 +92,12 @@ export default function OrderManagement() {
       })
       if (res.ok) {
         fetchOrders()
-        alert('Delivery partner assigned successfully!')
+        showMessage('Delivery partner assigned successfully!')
       } else {
-        alert('Failed to assign partner.')
+        showMessage('Failed to assign partner.', true)
       }
     } catch {
-      alert('Error connecting to server.')
+      showMessage('Error connecting to server.', true)
     }
   }
 
@@ -191,6 +200,37 @@ export default function OrderManagement() {
           </table>
         )}
       </div>
+
+      {modalConfig.show && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col transform scale-100 transition-transform">
+            <div className={`px-6 py-4 border-b flex items-center gap-3 ${modalConfig.isError ? 'bg-[#fff0f0] border-[#ffdad6]' : 'bg-[#f0f6ec] border-[#bfcaba]'}`}>
+              <span className={`material-symbols-outlined text-[24px] ${modalConfig.isError ? 'text-[#ba1a1a]' : 'text-[#0d631b]'}`}>
+                {modalConfig.isError ? 'error' : 'check_circle'}
+              </span>
+              <h3 className={`font-bold text-lg ${modalConfig.isError ? 'text-[#93000a]' : 'text-[#0d631b]'}`}>
+                {modalConfig.isError ? 'Error' : 'Success'}
+              </h3>
+            </div>
+            <div className="p-6 text-center">
+              <p className="text-[#1a1c1c] text-base font-medium">{modalConfig.message}</p>
+            </div>
+            <div className="px-6 pb-6 pt-2 flex justify-center">
+              <button 
+                onClick={() => setModalConfig({ show: false, message: '', isError: false })} 
+                className={`px-8 py-2 font-bold rounded-lg transition-colors ${
+                  modalConfig.isError 
+                    ? 'bg-[#ba1a1a] text-white hover:bg-[#93000a]' 
+                    : 'bg-[#0d631b] text-white hover:bg-[#0a4a14]'
+                }`}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

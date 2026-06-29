@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function OrderTracking() {
+  const { t } = useLanguage()
   const [searchParams] = useSearchParams()
   const targetOrderId = searchParams.get('id')
   const [order, setOrder] = useState(null)
@@ -40,15 +42,15 @@ export default function OrderTracking() {
   }, [targetOrderId])
 
   if (loading) {
-    return <div className="max-w-3xl mx-auto p-8 text-center text-[#40493d]">Loading tracking details...</div>
+    return <div className="max-w-3xl mx-auto p-8 text-center text-[#40493d]">{t('my_orders.loading_tracking')}</div>
   }
 
   if (!order) {
     return (
       <div className="max-w-3xl mx-auto p-8 text-center bg-white rounded-xl border border-[#bfcaba] shadow-sm">
         <span className="material-symbols-outlined text-4xl mb-2 text-gray-400">inventory_2</span>
-        <p className="text-[#40493d]">No active orders found to track.</p>
-        <button onClick={() => navigate('/dashboard/orders')} className="mt-4 px-4 py-2 bg-[#0d631b] text-white rounded font-bold text-sm">View All Orders</button>
+        <p className="text-[#40493d]">{t('my_orders.no_active_track')}</p>
+        <button onClick={() => navigate('/dashboard/orders')} className="mt-4 px-4 py-2 bg-[#0d631b] text-white rounded font-bold text-sm">{t('my_orders.view_all')}</button>
       </div>
     )
   }
@@ -75,8 +77,8 @@ export default function OrderTracking() {
           <span className="material-symbols-outlined text-[#1a1c1c]">arrow_back</span>
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1c] mb-1">Order Tracking</h1>
-          <p className="text-[#40493d] text-sm">Track your order in real-time.</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1c] mb-1">{t('my_orders.tracking_title')}</h1>
+          <p className="text-[#40493d] text-sm">{t('my_orders.tracking_subtitle')}</p>
         </div>
       </div>
 
@@ -86,9 +88,9 @@ export default function OrderTracking() {
           <div>
             <div className="font-bold text-xl text-[#1a1c1c] mb-1">{order.orderId}</div>
             <div className="text-sm text-[#40493d]">{itemString}</div>
-            <div className="text-xs text-[#707a6c] mt-1">Ordered on {new Date(order.createdAt).toLocaleDateString()} • ₹{order.totalAmount.toLocaleString()}</div>
+            <div className="text-xs text-[#707a6c] mt-1">{t('my_orders.ordered_on')} {new Date(order.createdAt).toLocaleDateString()} • ₹{order.totalAmount.toLocaleString()}</div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>{order.status}</span>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>{t(`my_orders.${order.status.toLowerCase().replace(/ /g, '_')}`) || order.status}</span>
         </div>
       </div>
 
@@ -101,7 +103,7 @@ export default function OrderTracking() {
             </div>
             <div>
               <div className="font-bold text-[#1a1c1c]">{order.deliveryPartner.firstName} {order.deliveryPartner.lastName}</div>
-              <div className="text-sm text-[#40493d]">Assigned Delivery Partner</div>
+              <div className="text-sm text-[#40493d]">{t('my_orders.partner_assigned')}</div>
               <div className="text-xs text-[#0d631b] font-semibold flex items-center gap-1 mt-0.5">
                 <span className="material-symbols-outlined text-[14px]">call</span> {order.deliveryPartner.phone}
               </div>
@@ -114,7 +116,7 @@ export default function OrderTracking() {
       ) : (
         <div className="bg-[#f8f9fa] rounded-xl border border-[#bfcaba] border-dashed shadow-sm p-6 mb-6 flex items-center gap-4 text-[#707a6c]">
           <span className="material-symbols-outlined text-3xl opacity-50">hourglass_empty</span>
-          <p className="text-sm">Delivery partner will be assigned soon. Check back later for details.</p>
+          <p className="text-sm">{t('my_orders.partner_soon')}</p>
         </div>
       )}
 
@@ -122,7 +124,7 @@ export default function OrderTracking() {
       <div className="bg-white rounded-xl border border-[#bfcaba] shadow-sm p-6">
         <h2 className="font-bold text-[#1a1c1c] mb-6 flex items-center gap-2">
           <span className="material-symbols-outlined text-[#0d631b]">route</span>
-          Shipment Progress
+          {t('my_orders.progress')}
         </h2>
         <div className="relative pl-2">
           {/* Background vertical line */}
@@ -149,10 +151,10 @@ export default function OrderTracking() {
                   </div>
                   <div className="pt-1.5">
                     <div className={`font-bold text-sm transition-colors duration-500 ${isCurrent ? 'text-[#1a1c1c] text-base' : isCompleted ? 'text-[#0d631b]' : 'text-[#707a6c]'}`}>
-                      {step}
+                      {t(`my_orders.${step.toLowerCase().replace(/ /g, '_')}`) || step}
                     </div>
                     {isCurrent && (
-                      <div className="text-xs text-[#0d631b] font-semibold mt-1">Current Status</div>
+                      <div className="text-xs text-[#0d631b] font-semibold mt-1">{t('my_orders.current_status')}</div>
                     )}
                   </div>
                 </div>

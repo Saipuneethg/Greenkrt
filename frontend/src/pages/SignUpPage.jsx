@@ -2,24 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
-
-const DISTRICTS = [
-  'Guntur, Andhra Pradesh',
-  'Krishna, Andhra Pradesh',
-  'West Godavari, Andhra Pradesh',
-  'East Godavari, Andhra Pradesh',
-  'Prakasam, Andhra Pradesh',
-  'Nellore, Andhra Pradesh',
-  'Nalgonda, Telangana',
-  'Karimnagar, Telangana',
-  'Warangal, Telangana',
-  'Medak, Telangana',
-  'Thanjavur, Tamil Nadu',
-  'Madurai, Tamil Nadu',
-  'Coimbatore, Tamil Nadu',
-  'Pune, Maharashtra',
-  'Nashik, Maharashtra',
-]
+import LocationInput from '../components/LocationInput'
 
 export default function SignUpPage() {
   const navigate = useNavigate()
@@ -35,7 +18,7 @@ export default function SignUpPage() {
     lastName: '',
     phone: '',
     email: '',
-    district: DISTRICTS[0],
+    district: '',
     password: '',
     terms: false,
   })
@@ -93,19 +76,19 @@ export default function SignUpPage() {
       <div className="hidden lg:flex flex-col justify-between w-1/2 bg-[#0A1F0C] p-16 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#00C853 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
         <div className="relative z-10 flex items-center gap-2">
-          <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
-          <span className="font-bold text-2xl text-white">GreenKrt</span>
+          <img src="/logo.jpeg" alt={t('auth.logo_alt')} className="w-8 h-8 rounded-full object-cover" />
+          <span className="font-bold text-2xl text-white">{t('auth.brand_name')}</span>
         </div>
         <div className="relative z-10 space-y-6">
-          <h2 className="text-3xl font-bold text-white leading-tight">Start your journey<br />to smarter farming.</h2>
+          <h2 className="text-3xl font-bold text-white leading-tight">{t('auth.start_journey')}<br />{t('auth.to_smarter')}</h2>
           <div className="space-y-4">
             {[
-              { icon: 'check_circle', text: 'Free account, no credit card required' },
-              { icon: 'check_circle', text: 'Access all farm services instantly' },
-              { icon: 'check_circle', text: 'AI-powered soil & crop recommendations' },
-              { icon: 'check_circle', text: 'Multi-language support (EN, తె)' },
-            ].map(item => (
-              <div key={item.text} className="flex items-center gap-3">
+              { icon: 'check_circle', text: t('auth.features_0') },
+              { icon: 'check_circle', text: t('auth.features_1') },
+              { icon: 'check_circle', text: t('auth.features_2') },
+              { icon: 'check_circle', text: t('auth.features_3') },
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[#00C853]">{item.icon}</span>
                 <span className="text-white/80 text-sm">{item.text}</span>
               </div>
@@ -113,7 +96,7 @@ export default function SignUpPage() {
           </div>
         </div>
         <div className="relative z-10">
-          <p className="text-white/40 text-sm">© 2025 GreenKrt. Trusted by 12,000+ Indian farmers.</p>
+          <p className="text-white/40 text-sm">{t('auth.copyright')}</p>
         </div>
       </div>
 
@@ -127,8 +110,8 @@ export default function SignUpPage() {
         </div>
 
         <div className="lg:hidden flex items-center gap-2 mb-8">
-          <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-8 h-8 rounded-full object-cover" />
-          <span className="font-bold text-2xl text-[#0d631b]">GreenKrt</span>
+          <img src="/logo.jpeg" alt={t('auth.logo_alt')} className="w-8 h-8 rounded-full object-cover" />
+          <span className="font-bold text-2xl text-[#0d631b]">{t('auth.brand_name')}</span>
         </div>
 
         <div className="w-full max-w-md">
@@ -199,12 +182,11 @@ export default function SignUpPage() {
             {role === 'farmer' && (
               <div>
                 <label className="block text-xs font-semibold text-[#1a1c1c] mb-1.5">District / State</label>
-                <select
-                  value={form.district} onChange={set('district')}
-                  className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white text-[#40493d]"
-                >
-                  {DISTRICTS.map(d => <option key={d}>{d}</option>)}
-                </select>
+                <LocationInput
+                  value={form.district}
+                  onChange={(val) => setForm(prev => ({ ...prev, district: val }))}
+                  placeholder="e.g. Guntur"
+                />
               </div>
             )}
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { useData } from '../../context/DataContext'
 
@@ -83,8 +84,8 @@ export default function ProductsManagement() {
         </table>
       </div>
 
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      {showAddModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-[#1a1c1c]">Add New Product</h2>
@@ -104,6 +105,7 @@ export default function ProductsManagement() {
                   <option>Pesticides</option>
                   <option>Seeds</option>
                   <option>Tools</option>
+                  <option>Micronutrients</option>
                 </select>
               </div>
               <div>
@@ -119,11 +121,12 @@ export default function ProductsManagement() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {editingProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      {editingProduct && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-[#1a1c1c]">Edit Product Info</h2>
@@ -149,7 +152,8 @@ export default function ProductsManagement() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

@@ -14,6 +14,14 @@ export default function DeliveryPartnerManagement() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  
+  const [toast, setToast] = useState({ message: '', type: '' })
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  }
 
   const fetchPartners = async () => {
     try {
@@ -82,22 +90,28 @@ export default function DeliveryPartnerManagement() {
       })
 
       if (res.ok) {
-        alert(editId ? 'Delivery partner updated successfully!' : 'Delivery partner registered successfully!')
+        showToast(editId ? 'Delivery partner updated successfully!' : 'Delivery partner registered successfully!', 'success')
         setShowAddModal(false)
         fetchPartners()
       } else {
         const err = await res.json()
-        alert(err.message || 'Failed to save delivery partner.')
+        showToast(err.message || 'Failed to save delivery partner.', 'error')
       }
     } catch {
-      alert('Error connecting to server.')
+      showToast('Error connecting to server.', 'error')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleDelete = async (partnerId) => {
-    if (!confirm('Are you sure you want to delete this delivery partner?')) return
+  const handleDeleteClick = (partnerId) => {
+    setConfirmDeleteId(partnerId)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!confirmDeleteId) return
+    const partnerId = confirmDeleteId
+    setConfirmDeleteId(null)
     try {
       const res = await fetch(`http://localhost:5000/api/admin/delivery-partners/${partnerId}`, {
         method: 'DELETE',
@@ -106,13 +120,13 @@ export default function DeliveryPartnerManagement() {
         },
       })
       if (res.ok) {
-        alert('Delivery partner deleted.')
+        showToast('Delivery partner deleted.', 'success')
         fetchPartners()
       } else {
-        alert('Failed to delete partner.')
+        showToast('Failed to delete partner.', 'error')
       }
     } catch {
-      alert('Error connecting to server.')
+      showToast('Error connecting to server.', 'error')
     }
   }
 
@@ -127,6 +141,13 @@ export default function DeliveryPartnerManagement() {
           <span className="material-symbols-outlined text-[18px]">add</span> Register Partner
         </button>
       </div>
+      
+      {toast.message && (
+        <div className={`p-4 rounded-xl flex items-start gap-2 border ${toast.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-[#f3fcef] text-[#0d631b] border-[#9cf49c]'}`}>
+          <span className="material-symbols-outlined mt-0.5">{toast.type === 'error' ? 'error' : 'task_alt'}</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
 
       <div className="bg-white border border-[#bccbb9] rounded-lg overflow-hidden">
         {loading ? (
@@ -159,7 +180,7 @@ export default function DeliveryPartnerManagement() {
                       <span className="material-symbols-outlined text-[14px]">edit</span> Edit
                     </button>
                     <button 
-                      onClick={() => handleDelete(p._id)} 
+                      onClick={() => handleDeleteClick(p._id)} 
                       className="text-red-600 font-semibold text-xs hover:underline flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-[14px]">delete</span> Delete
@@ -212,6 +233,20 @@ export default function DeliveryPartnerManagement() {
                 {submitting ? 'Saving...' : (editId ? 'Save Changes' : 'Register')}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg text-center">
+            <span className="material-symbols-outlined text-red-500 text-5xl mb-4">warning</span>
+            <h2 className="text-xl font-bold text-[#1a1c1c] mb-2">Delete Partner?</h2>
+            <p className="text-[#40493d] mb-6">Are you sure you want to delete this delivery partner? This action cannot be undone.</p>
+            <div className="flex gap-4">
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 h-11 border border-[#bfcaba] text-[#40493d] rounded font-bold transition-colors hover:bg-gray-50">Cancel</button>
+              <button onClick={handleDeleteConfirm} className="flex-1 h-11 bg-red-600 text-white rounded font-bold transition-colors hover:bg-red-700 shadow-sm">Delete</button>
+            </div>
           </div>
         </div>
       )}

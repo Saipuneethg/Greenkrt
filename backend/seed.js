@@ -139,6 +139,54 @@ const seedDB = async () => {
         },
         {
           id: 'P-108',
+          name: 'MOP (Muriate of Potash)',
+          brand: 'IPL',
+          price: 1050,
+          unit: '50kg bag',
+          category: 'Fertilizers',
+          badge: '',
+          image: '🧂',
+          stock: 100,
+          status: 'In Stock'
+        },
+        {
+          id: 'P-109',
+          name: 'SSP (Single Super Phosphate)',
+          brand: 'Coromandel',
+          price: 450,
+          unit: '50kg bag',
+          category: 'Fertilizers',
+          badge: '',
+          image: '🌫️',
+          stock: 100,
+          status: 'In Stock'
+        },
+        {
+          id: 'P-110',
+          name: 'Ammonium Sulphate',
+          brand: 'GSFC',
+          price: 850,
+          unit: '50kg bag',
+          category: 'Fertilizers',
+          badge: '',
+          image: '❄️',
+          stock: 100,
+          status: 'In Stock'
+        },
+        {
+          id: 'P-111',
+          name: 'Calcium Nitrate',
+          brand: 'Yara',
+          price: 1250,
+          unit: '25kg bag',
+          category: 'Fertilizers',
+          badge: 'Premium',
+          image: '✨',
+          stock: 100,
+          status: 'In Stock'
+        },
+        {
+          id: 'P-112',
           name: 'Paddy Seeds (BPT)',
           brand: 'APSDCA',
           price: 1200,
@@ -217,6 +265,20 @@ const seedDB = async () => {
       ];
       await Service.create(defaultServices);
       console.log('Default services seeded.');
+    }
+
+    // 4. Seed Warehouses if empty
+    const Warehouse = require('./models/Warehouse');
+    const warehouseCount = await Warehouse.countDocuments();
+    if (warehouseCount === 0) {
+      console.log('Seeding default warehouses...');
+      const defaultWarehouses = [
+        { warehouseId: 'WH-01', name: 'Guntur Main Hub', capacity: 85, status: 'Operational' },
+        { warehouseId: 'WH-02', name: 'Vijayawada Dist', capacity: 92, status: 'Warning' },
+        { warehouseId: 'WH-03', name: 'Tenali Local', capacity: 45, status: 'Operational' },
+      ];
+      await Warehouse.create(defaultWarehouses);
+      console.log('Default warehouses seeded.');
     }
   } catch (err) {
     console.error('Error seeding DB:', err.message);
