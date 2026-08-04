@@ -244,7 +244,7 @@ export default function MyOrders() {
               } else if (o.serviceType === 'land') {
                 detailsString = `${purposeStr} • ${o.details?.farmSize || 1} ${t('dashboard.acres')} • ${dateLabel}: ${o.details?.date}`
               } else if (o.serviceType === 'soil') {
-                detailsString = `Soil Sample Collection • ${o.details?.farmSize || 1} ${t('dashboard.acres')} • ${dateLabel}: ${o.details?.date}`
+                detailsString = `Soil Sample Collection • ${dateLabel}: ${o.details?.date}`
               }
               
               let iconName = 'flight'

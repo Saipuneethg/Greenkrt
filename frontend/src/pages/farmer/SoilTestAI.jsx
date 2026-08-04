@@ -22,7 +22,6 @@ export default function SoilTestAI() {
   const [date, setDate] = useState('')
   const [time, setTime] = useState('09:00')
   const [farmLocation, setFarmLocation] = useState('')
-  const [farmSize, setFarmSize] = useState('')
   const [bookingLoading, setBookingLoading] = useState(false)
 
   useEffect(() => {
@@ -32,7 +31,6 @@ export default function SoilTestAI() {
         const parsed = JSON.parse(saved)
         if (parsed.length > 0) {
           const plot = parsed[0]
-          setFarmSize(plot.acres ? plot.acres.toString() : '')
           setFarmLocation(plot.location || '')
         }
       } catch (e) {
@@ -49,13 +47,11 @@ export default function SoilTestAI() {
     }
     setBookingLoading(true)
 
-    const acres = parseFloat(farmSize) || 0
-    
     const soilService = services.find(s => s.name === 'Soil Test & AI Analysis' || s.title === 'Soil Test & AI Analysis')
     const defaultPrice = 350
     const basePriceValue = soilService && soilService.basePrice ? parseInt(soilService.basePrice.replace(/\D/g, '')) || defaultPrice : defaultPrice
 
-    const serviceCost = acres > 0 ? acres * basePriceValue : basePriceValue // Default 1 sample
+    const serviceCost = basePriceValue // Flat fee
     const travelCharge = 200
     const gst = Math.round((serviceCost + travelCharge) * 0.18)
     const totalCost = serviceCost + travelCharge + gst
@@ -71,7 +67,6 @@ export default function SoilTestAI() {
           serviceType: 'soil',
           details: {
             farmLocation,
-            farmSize: acres || 1,
             date,
             time,
           },
@@ -459,11 +454,6 @@ export default function SoilTestAI() {
                   <input value={farmLocation} onChange={e => setFarmLocation(e.target.value)} required placeholder="e.g. Kondaparva Village" className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b]" />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Farm Size (Acres) *</label>
-                  <input value={farmSize} onChange={e => setFarmSize(e.target.value)} type="number" step="0.1" required placeholder="e.g. 5" className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b]" />
-                </div>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Date *</label>
@@ -481,8 +471,7 @@ export default function SoilTestAI() {
                     const defaultPrice = 350
                     const basePriceValue = soilService && soilService.basePrice ? parseInt(soilService.basePrice.replace(/\D/g, '')) || defaultPrice : defaultPrice
                     
-                    const pSize = parseFloat(farmSize) || 1
-                    const pCost = pSize * basePriceValue
+                    const pCost = basePriceValue
                     const pTravel = 200
                     const pGst = Math.round((pCost + pTravel) * 0.18)
                     const pTotal = pCost + pTravel + pGst
@@ -490,7 +479,7 @@ export default function SoilTestAI() {
                     return (
                       <>
                         <div className="flex justify-between text-sm mb-2 text-[#40493d]">
-                          <span>Collection Fee ({pSize} Acres)</span>
+                          <span>Collection Fee</span>
                           <span>₹{pCost}</span>
                         </div>
                         <div className="flex justify-between text-sm mb-2 text-[#40493d]">
