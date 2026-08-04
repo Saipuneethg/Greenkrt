@@ -23,6 +23,10 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Please fill all required fields.' });
   }
 
+  // Normalize phone (strip spaces and ensure +91 prefix)
+  const cleanPhone = phone.replace(/\s+/g, '');
+  const finalPhone = cleanPhone.startsWith('+91') ? cleanPhone : `+91${cleanPhone}`;
+
   const userRole = role || 'farmer';
   if (userRole === 'farmer' && !village) {
     return res.status(400).json({ message: 'Village name is required for farmers.' });
@@ -36,7 +40,7 @@ router.post('/register', async (req, res) => {
       }
     }
 
-    const existingPhone = await User.findOne({ phone });
+    const existingPhone = await User.findOne({ phone: finalPhone });
     if (existingPhone) {
       return res.status(400).json({ message: 'An account with this phone number already exists. Please sign in.' });
     }
@@ -47,7 +51,7 @@ router.post('/register', async (req, res) => {
     const user = new User({
       firstName,
       lastName,
-      phone,
+      phone: finalPhone,
       email,
       password: hashedPassword,
       role: role || 'farmer',
@@ -91,8 +95,16 @@ router.post('/login', async (req, res) => {
   }
 
   try {
+    const cleanIdentifier = identifier.replace(/\s+/g, '');
+    const phoneWithPrefix = cleanIdentifier.startsWith('+91') ? cleanIdentifier : `+91${cleanIdentifier}`;
+
     const user = await User.findOne({
-      $or: [{ email: identifier }, { phone: identifier }],
+      $or: [
+        { email: identifier }, 
+        { phone: identifier },
+        { phone: phoneWithPrefix },
+        { phone: cleanIdentifier }
+      ],
     });
 
     if (!user) {
