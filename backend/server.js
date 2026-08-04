@@ -68,7 +68,7 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    res.status(500).json({ message: 'Database Connection Error' });
+    res.status(500).json({ message: 'Database Connection Error' }); 
   }
 });
 

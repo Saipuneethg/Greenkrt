@@ -17,10 +17,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'greenkrt_dev_secret_change_in_prod
 // @desc    Register a new user
 // @access  Public
 router.post('/register', async (req, res) => {
-  const { firstName, lastName, phone, email, password, role, district } = req.body;
+  const { firstName, lastName, phone, email, password, role, district, village } = req.body;
 
   if (!firstName || !lastName || !phone || !password) {
     return res.status(400).json({ message: 'Please fill all required fields.' });
+  }
+
+  const userRole = role || 'farmer';
+  if (userRole === 'farmer' && !village) {
+    return res.status(400).json({ message: 'Village name is required for farmers.' });
   }
 
   try {
@@ -47,6 +52,7 @@ router.post('/register', async (req, res) => {
       password: hashedPassword,
       role: role || 'farmer',
       district,
+      village,
     });
 
     await user.save();
@@ -118,6 +124,7 @@ router.post('/login', async (req, res) => {
         phone: user.phone,
         role: user.role,
         district: user.district,
+        village: user.village,
       },
     });
   } catch (err) {
@@ -146,18 +153,15 @@ router.post('/google', async (req, res) => {
     let user = await User.findOne({ email });
 
     if (!user) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), salt);
-      
-      user = new User({
-        firstName: given_name || 'Google',
-        lastName: family_name || 'User',
-        email,
-        phone: 'GOOGLE-' + Date.now() + '-' + Math.floor(Math.random() * 10000), 
-        password: hashedPassword,
-        role: role || 'farmer',
+      return res.status(202).json({ 
+        message: 'Please complete your profile by providing your Phone Number and Village.',
+        pendingUser: {
+          firstName: given_name || 'Google',
+          lastName: family_name || 'User',
+          email,
+          role: role || 'farmer'
+        }
       });
-      await user.save();
     } else {
       if (role && user.role !== role) {
         return res.status(401).json({ message: `Invalid login. Please select the correct role (${user.role === 'admin' ? 'Admin' : 'Farmer'}) to login.` });
@@ -236,6 +240,58 @@ router.put('/profile', auth, async (req, res) => {
     res.json(updatedUser);
   } catch (err) {
     console.error('Profile update error:', err.message);
+    res.status(500).json({ message: 'An unexpected error occurred. Please try again.' });
+  }
+});
+
+// @route   POST /api/auth/google-complete
+// @desc    Complete Google registration with phone and village
+// @access  Public
+router.post('/google-complete', async (req, res) => {
+  const { firstName, lastName, email, phone, role, village } = req.body;
+
+  if (!phone || !village) {
+    return res.status(400).json({ message: 'Phone number and Village are required.' });
+  }
+
+  try {
+    const existingPhone = await User.findOne({ phone });
+    if (existingPhone) {
+      return res.status(400).json({ message: 'An account with this phone number already exists.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), salt);
+
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      phone,
+      password: hashedPassword,
+      role: role || 'farmer',
+      village,
+    });
+
+    await user.save();
+
+    const payload = { user: { id: user.id, role: user.role } };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '5d' });
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        village: user.village,
+      }
+    });
+  } catch (err) {
+    console.error('Google Complete error:', err.message);
     res.status(500).json({ message: 'An unexpected error occurred. Please try again.' });
   }
 });

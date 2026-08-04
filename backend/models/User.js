@@ -27,6 +27,9 @@ const UserSchema = new mongoose.Schema({
     enum: ['farmer', 'admin', 'delivery'],
     default: 'farmer',
   },
+  village: {
+    type: String,
+  },
   district: {
     type: String,
   },

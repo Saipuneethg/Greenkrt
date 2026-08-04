@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
 const Booking = require('../models/Booking');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
@@ -136,10 +137,12 @@ router.post('/bookings', auth, async (req, res) => {
   try {
     const count = await Booking.countDocuments();
     const bookingId = `BK-${1000 + count + 1}`;
+    const userDoc = await User.findById(req.user.id);
 
     const newBooking = new Booking({
       bookingId,
       user: req.user.id,
+      villageName: userDoc ? userDoc.village : 'Unknown',
       serviceType,
       details,
       cost,

@@ -11,6 +11,9 @@ const BookingSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  villageName: {
+    type: String,
+  },
   serviceType: {
     type: String,
     enum: ['drone', 'land'],

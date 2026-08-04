@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const SoilTest = require('../models/SoilTest');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 const multer = require('multer');
@@ -47,10 +48,12 @@ router.post('/', [auth, upload.single('reportFile')], async (req, res) => {
   try {
     const count = await SoilTest.countDocuments();
     const requestId = `SL-${1000 + count + 1}`;
+    const userDoc = await User.findById(req.user.id);
 
     const newRequest = new SoilTest({
       requestId,
       user: req.user.id,
+      villageName: userDoc ? userDoc.village : 'Unknown',
       soilType: soilType || '',
       prevCrop: prevCrop || '',
       cropPlanned: cropPlanned || '',

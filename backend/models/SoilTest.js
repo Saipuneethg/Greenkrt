@@ -11,6 +11,9 @@ const SoilTestSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  villageName: {
+    type: String,
+  },
   farmLocation: {
     type: String,
   },

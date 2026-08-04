@@ -64,9 +64,12 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    const userDoc = await User.findById(req.user.id);
+
     const newOrder = new Order({
       orderId,
       user: req.user.id,
+      villageName: userDoc ? userDoc.village : 'Unknown',
       items: parsedItems,
       totalAmount,
     });

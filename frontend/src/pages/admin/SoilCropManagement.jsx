@@ -173,7 +173,7 @@ export default function SoilCropManagement() {
                 <div key={req.requestId} className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#fcfcfc] hover:border-[#006e2f] transition-all">
                   <div>
                     <h3 className="font-bold text-sm text-[#161d16]">{req.requestId} • {req.user?.firstName} {req.user?.lastName}</h3>
-                    <p className="text-xs text-[#3d4a3d] mt-1">Location: {req.farmLocation || 'N/A'} | Crop Planned: {req.cropPlanned || 'N/A'}</p>
+                    <p className="text-xs text-[#3d4a3d] mt-1">Village: {req.villageName || req.user?.district || 'N/A'} | Location: {req.farmLocation || 'N/A'} | Crop Planned: {req.cropPlanned || 'N/A'}</p>
                     {req.reportUrl && (
                       <a href={`http://localhost:5000${req.reportUrl}`} target="_blank" rel="noreferrer" className="text-xs text-[#006e2f] font-semibold hover:underline mt-2 inline-block">
                         View Uploaded Report

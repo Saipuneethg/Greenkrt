@@ -20,6 +20,7 @@ export default function SignUpPage() {
     lastName: '',
     phone: '',
     email: '',
+    village: '',
     district: '',
     password: '',
     terms: false,
@@ -53,6 +54,7 @@ export default function SignUpPage() {
           email: form.email,
           password: form.password,
           role,
+          village: form.village,
           district: form.district,
         }),
       })
@@ -135,7 +137,7 @@ export default function SignUpPage() {
                 <label className="block text-xs font-semibold text-[#1a1c1c] mb-1.5">{t('auth.fname')} *</label>
                 <input
                   value={form.firstName} onChange={set('firstName')}
-                  placeholder="Raju" required
+                  placeholder="First Name" required
                   className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
                 />
               </div>
@@ -143,7 +145,7 @@ export default function SignUpPage() {
                 <label className="block text-xs font-semibold text-[#1a1c1c] mb-1.5">{t('auth.lname')} *</label>
                 <input
                   value={form.lastName} onChange={set('lastName')}
-                  placeholder="Reddy" required
+                  placeholder="Last Name" required
                   className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
                 />
               </div>
@@ -179,6 +181,17 @@ export default function SignUpPage() {
                   value={form.district}
                   onChange={(val) => setForm(prev => ({ ...prev, district: val }))}
                   placeholder="e.g. Guntur"
+                />
+              </div>
+            )}
+
+            {role === 'farmer' && (
+              <div>
+                <label className="block text-xs font-semibold text-[#1a1c1c] mb-1.5">Village Name *</label>
+                <input
+                  value={form.village} onChange={set('village')}
+                  placeholder="e.g. Kondaparva" required
+                  className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
                 />
               </div>
             )}

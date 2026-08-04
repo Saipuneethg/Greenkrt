@@ -164,7 +164,7 @@ export default function OrderManagement() {
                   <tr key={o._id} className="border-b border-[#bccbb9]/30 hover:bg-[#f3fcef]">
                     <td className="p-4 font-semibold text-[#161d16]">{o.orderId}</td>
                     <td className="p-4">{new Date(o.createdAt).toLocaleDateString()}</td>
-                    <td className="p-4">{o.user?.firstName} {o.user?.lastName} ({o.user?.district || 'Guntur'})</td>
+                    <td className="p-4">{o.user?.firstName} {o.user?.lastName} ({o.villageName || o.user?.district || 'Guntur'})</td>
                     <td className="p-4">{itemString}</td>
                     <td className="p-4 font-bold text-[#006e2f]">₹{o.totalAmount}</td>
                     <td className="p-4">

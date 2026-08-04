@@ -261,7 +261,8 @@ export default function ServicesManagement() {
                         </div>
                         <p className="text-sm text-[#40493d]">
                           <span className="font-semibold text-[#1a1c1c]">Booking ID:</span> {b.bookingId} • 
-                          <span className="font-semibold text-[#1a1c1c] ml-2">Phone:</span> {b.user?.phone}
+                          <span className="font-semibold text-[#1a1c1c] ml-2">Phone:</span> {b.user?.phone} •
+                          <span className="font-semibold text-[#1a1c1c] ml-2">Village:</span> {b.villageName || b.user?.district || 'N/A'}
                         </p>
                         <div className="text-xs text-[#707a6c] mt-2 flex flex-wrap gap-x-4 gap-y-1">
                           <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">calendar_today</span> {b.details?.date || 'N/A'} at {b.details?.time || 'N/A'}</span>

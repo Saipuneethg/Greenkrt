@@ -140,7 +140,7 @@ export default function AdminSignUpPage() {
                 <label className="block text-xs font-semibold text-[#1a1c1c] mb-1.5">{t('auth.fname')} *</label>
                 <input
                   value={form.firstName} onChange={set('firstName')}
-                  placeholder="Raju" required
+                  placeholder="First Name" required
                   className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
                 />
               </div>
@@ -148,7 +148,7 @@ export default function AdminSignUpPage() {
                 <label className="block text-xs font-semibold text-[#1a1c1c] mb-1.5">{t('auth.lname')} *</label>
                 <input
                   value={form.lastName} onChange={set('lastName')}
-                  placeholder="Reddy" required
+                  placeholder="Last Name" required
                   className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
                 />
               </div>

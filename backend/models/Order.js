@@ -26,6 +26,9 @@ const OrderSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  villageName: {
+    type: String,
+  },
   items: [OrderItemSchema],
   totalAmount: {
     type: Number,
