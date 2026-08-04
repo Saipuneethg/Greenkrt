@@ -85,6 +85,22 @@ export default function ServicesManagement() {
     } finally {
       setLoadingBookings(false);
     }
+  const updateBookingStatus = async (bookingId, newStatus) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/services/bookings/${bookingId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': sessionStorage.getItem('greenkrt_token')
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (res.ok) {
+        setServiceBookings(prev => prev.map(b => b.bookingId === bookingId ? { ...b, status: newStatus } : b))
+      }
+    } catch (err) {
+      console.error('Failed to update status', err)
+    }
   }
 
   return (
@@ -254,11 +270,19 @@ export default function ServicesManagement() {
                   {serviceBookings.map(b => (
                     <div key={b.bookingId} className="bg-white border border-[#bccbb9] rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-3 mb-1">
                           <h4 className="font-bold text-[#1a1c1c]">{b.user?.firstName} {b.user?.lastName}</h4>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${b.status === 'Completed' ? 'bg-[#cfe6c9] text-[#19722b]' : (b.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-[#fffdf0] text-[#643f00] border border-[#ffb957]')}`}>
-                            {b.status}
-                          </span>
+                          <select 
+                            value={b.status} 
+                            onChange={(e) => updateBookingStatus(b.bookingId, e.target.value)}
+                            className={`px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider border-none outline-none cursor-pointer ${b.status === 'Completed' ? 'bg-[#cfe6c9] text-[#19722b]' : (b.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-[#fffdf0] text-[#643f00]')}`}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
                         </div>
                         <p className="text-sm text-[#40493d]">
                           <span className="font-semibold text-[#1a1c1c]">Booking ID:</span> {b.bookingId} • 
