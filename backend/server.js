@@ -50,6 +50,28 @@ app.use((req, res, next) => {
 
 app.use('/uploads', express.static('uploads'));
 
+// MongoDB Connection Middleware for Vercel Serverless
+let isConnected = false;
+app.use(async (req, res, next) => {
+  if (isConnected) {
+    return next();
+  }
+  try {
+    const uri = (process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/greenkrt').trim();
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+    });
+    isConnected = true;
+    console.log('MongoDB Connected...');
+    try { await seedDB(); } catch(e) {}
+    next();
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    res.status(500).json({ message: 'Database Connection Error' });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -62,14 +84,6 @@ app.use('/api/farms', farmRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/transfers', transferRoutes);
-
-// MongoDB Connection
-mongoose.connect((process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/greenkrt').trim())
-.then(async () => {
-  console.log('MongoDB Connected...');
-  await seedDB();
-})
-.catch(err => console.log('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
