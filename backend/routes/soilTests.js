@@ -86,7 +86,7 @@ Text: ${text.substring(0, 5000)}`;
       // 3. Query DB for available fertilizers
       const products = await Product.find({ category: { $in: ['Fertilizers', 'Micronutrients', 'Pesticides'] }, stock: { $gt: 0 } });
       const availableFertilizers = products.map(p => ({ 
-        id: p._id.toString(), 
+        id: p.id, 
         name: p.name, 
         price: p.price,
         unit: p.unit
