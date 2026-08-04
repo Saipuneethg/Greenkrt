@@ -74,6 +74,7 @@ export default function ServicesManagement() {
         let sType = 'unknown';
         if (sNameLower.includes('drone')) sType = 'drone';
         if (sNameLower.includes('land')) sType = 'land';
+        if (sNameLower.includes('soil')) sType = 'soil';
         
         // Filter bookings by type
         const filtered = allBookings.filter(b => b.serviceType === sType);

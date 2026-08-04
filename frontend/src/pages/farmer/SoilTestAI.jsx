@@ -14,6 +14,79 @@ export default function SoilTestAI() {
   const [activeReport, setActiveReport] = useState(null)
   const [toastMessage, setToastMessage] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  
+  // New Booking States
+  const [activeTab, setActiveTab] = useState('upload') // 'upload' or 'book'
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('09:00')
+  const [farmLocation, setFarmLocation] = useState('')
+  const [farmSize, setFarmSize] = useState('')
+  const [bookingLoading, setBookingLoading] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('greenkrt_farmer_plots')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed.length > 0) {
+          const plot = parsed[0]
+          setFarmSize(plot.acres ? plot.acres.toString() : '')
+          setFarmLocation(plot.location || '')
+        }
+      } catch (e) {
+        console.error('Failed to parse farmer plots', e)
+      }
+    }
+  }, [])
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault()
+    if (!date) {
+      showToast('Please select a date.')
+      return
+    }
+    setBookingLoading(true)
+
+    const acres = parseFloat(farmSize) || 0
+    const serviceCost = acres > 0 ? acres * 350 : 350 // Default 1 sample
+    const travelCharge = 200
+    const gst = Math.round((serviceCost + travelCharge) * 0.18)
+    const totalCost = serviceCost + travelCharge + gst
+
+    try {
+      const res = await fetch(`${API_BASE}/api/services/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': sessionStorage.getItem('greenkrt_token'),
+        },
+        body: JSON.stringify({
+          serviceType: 'soil',
+          details: {
+            farmLocation,
+            farmSize: acres || 1,
+            date,
+            time,
+          },
+          cost: totalCost,
+        }),
+      })
+
+      if (res.ok) {
+        showToast('Booking placed successfully! Our expert will visit your farm.')
+        setTimeout(() => {
+          setDate('')
+        }, 2000)
+      } else {
+        const errData = await res.json()
+        showToast(errData.message || 'Failed to place booking.')
+      }
+    } catch {
+      showToast('Error placing booking.')
+    } finally {
+      setBookingLoading(false)
+    }
+  }
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -299,22 +372,40 @@ export default function SoilTestAI() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">{t('soil_test.title')}</h1>
-        <p className="text-[#40493d] text-base">{t('ai_soil.subtitle')}</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">{t('soil_test.title')}</h1>
+          <p className="text-[#40493d] text-base">{t('ai_soil.subtitle')}</p>
+        </div>
+        <div className="flex bg-[#e8f3e5] rounded-lg p-1 border border-[#bfcaba] shrink-0">
+          <button 
+            onClick={() => setActiveTab('upload')}
+            className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${activeTab === 'upload' ? 'bg-[#0d631b] text-white shadow' : 'text-[#40493d] hover:text-[#0d631b]'}`}
+          >
+            Upload Report (AI)
+          </button>
+          <button 
+            onClick={() => setActiveTab('book')}
+            className={`px-6 py-2 rounded-md font-bold text-sm transition-all ${activeTab === 'book' ? 'bg-[#0d631b] text-white shadow' : 'text-[#40493d] hover:text-[#0d631b]'}`}
+          >
+            Book Collection
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Left: Upload Form */}
+        {/* Left: Dynamic Form based on Tab */}
         <div className="bg-white rounded-2xl border border-[#bfcaba] shadow-sm overflow-hidden flex flex-col">
-          <div className="bg-[#f0f6ec] p-5 border-b border-[#bfcaba]">
-            <h3 className="font-bold text-xl text-[#0d631b] flex items-center gap-2">
-              <span className="material-symbols-outlined">upload_file</span>
-              {t('ai_soil.upload_title')}
-            </h3>
-            <p className="text-sm text-[#40493d] mt-1">{t('ai_soil.upload_desc')}</p>
-          </div>
-          <div className="p-6 flex-1">
+          {activeTab === 'upload' ? (
+            <>
+              <div className="bg-[#f0f6ec] p-5 border-b border-[#bfcaba]">
+                <h3 className="font-bold text-xl text-[#0d631b] flex items-center gap-2">
+                  <span className="material-symbols-outlined">upload_file</span>
+                  {t('ai_soil.upload_title')}
+                </h3>
+                <p className="text-sm text-[#40493d] mt-1">{t('ai_soil.upload_desc')}</p>
+              </div>
+              <div className="p-6 flex-1">
             <form onSubmit={handleSubmit} className="space-y-5 h-full flex flex-col">
               <div>
                 <label className="block text-sm font-semibold text-[#1a1c1c] mb-2">{t('ai_soil.report_file')} <span className="text-red-500">*</span></label>
@@ -344,6 +435,67 @@ export default function SoilTestAI() {
               </div>
             </form>
           </div>
+          </>
+          ) : (
+          <>
+            <div className="bg-[#f0f6ec] p-5 border-b border-[#bfcaba]">
+              <h3 className="font-bold text-xl text-[#0d631b] flex items-center gap-2">
+                <span className="material-symbols-outlined">event_available</span>
+                Book Soil Sample Collection
+              </h3>
+              <p className="text-sm text-[#40493d] mt-1">Our expert will visit your farm to collect soil samples.</p>
+            </div>
+            <div className="p-6 flex-1">
+              <form onSubmit={handleBookingSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Farm Location *</label>
+                  <input value={farmLocation} onChange={e => setFarmLocation(e.target.value)} required placeholder="e.g. Kondaparva Village" className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b]" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Farm Size (Acres) *</label>
+                  <input value={farmSize} onChange={e => setFarmSize(e.target.value)} type="number" step="0.1" required placeholder="e.g. 5" className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b]" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Date *</label>
+                    <input type="date" required min={new Date().toISOString().split('T')[0]} value={date} onChange={e => setDate(e.target.value)} className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Time *</label>
+                    <input type="time" required value={time} onChange={e => setTime(e.target.value)} className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b]" />
+                  </div>
+                </div>
+
+                <div className="bg-[#f9f9f9] border border-[#bfcaba] rounded-xl p-4 mt-4">
+                  <div className="flex justify-between text-sm mb-2 text-[#40493d]">
+                    <span>Collection Fee ({farmSize || 1} Acres)</span>
+                    <span>₹{((parseFloat(farmSize) || 1) * 350)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-2 text-[#40493d]">
+                    <span>Travel Charge</span>
+                    <span>₹200</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-3 text-[#40493d]">
+                    <span>GST (18%)</span>
+                    <span>₹{Math.round((((parseFloat(farmSize) || 1) * 350) + 200) * 0.18)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg text-[#0d631b] pt-3 border-t border-[#bfcaba]">
+                    <span>Total Cost</span>
+                    <span>₹{(((parseFloat(farmSize) || 1) * 350) + 200) + Math.round((((parseFloat(farmSize) || 1) * 350) + 200) * 0.18)}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <button disabled={bookingLoading} type="submit" className="w-full h-[52px] bg-[#0d631b] hover:bg-[#0a4a14] text-white font-bold text-base uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                    {bookingLoading ? 'Booking...' : <><span className="material-symbols-outlined">event_available</span> Confirm Booking</>}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </>
+          )}
         </div>
 
         {/* Right: Past Analyses */}
