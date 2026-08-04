@@ -23,6 +23,7 @@ export default function SoilTestAI() {
   const [time, setTime] = useState('09:00')
   const [farmLocation, setFarmLocation] = useState('')
   const [bookingLoading, setBookingLoading] = useState(false)
+  const [bookingSuccess, setBookingSuccess] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('greenkrt_farmer_plots')
@@ -75,10 +76,12 @@ export default function SoilTestAI() {
       })
 
       if (res.ok) {
-        showToast('Booking placed successfully! Our expert will visit your farm.')
+        setBookingSuccess(true)
         setTimeout(() => {
+          setBookingSuccess(false)
           setDate('')
-        }, 2000)
+          setFarmLocation('')
+        }, 3000)
       } else {
         const errData = await res.json()
         showToast(errData.message || 'Failed to place booking.')
@@ -448,6 +451,13 @@ export default function SoilTestAI() {
               <p className="text-sm text-[#40493d] mt-1">Our expert will visit your farm to collect soil samples.</p>
             </div>
             <div className="p-6 flex-1">
+              {bookingSuccess && (
+                <div className="mb-6 p-4 bg-[#f3fcef] border border-[#9cf49c] rounded-xl text-center shadow-sm">
+                  <span className="material-symbols-outlined text-[#0d631b] text-3xl mb-2">task_alt</span>
+                  <h3 className="font-bold text-[#1a1c1c] mb-1">Booking Confirmed</h3>
+                  <p className="text-sm text-[#40493d]">Your soil collection request has been placed successfully.</p>
+                </div>
+              )}
               <form onSubmit={handleBookingSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">Farm Location *</label>
