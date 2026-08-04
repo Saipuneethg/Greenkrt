@@ -19,7 +19,7 @@ export default function ServicesManagement() {
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/users/partners`, {
+        const res = await fetch(`${API_BASE}/api/admin/delivery-partners`, {
           headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
         })
         if (res.ok) {
