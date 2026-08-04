@@ -194,7 +194,9 @@ export default function MyOrders() {
             const { color, icon } = getStatusStyle(o.status)
             
             if (o.itemType === 'service') {
-              const serviceName = o.serviceType === 'drone' ? t('my_orders.drone_service') : t('my_orders.land_service')
+              let serviceName = t('my_orders.drone_service')
+              if (o.serviceType === 'land') serviceName = t('my_orders.land_service')
+              if (o.serviceType === 'soil') serviceName = 'Soil Test Collection'
               
               const translateCrop = (crop) => {
                 if (!crop) return ''
@@ -226,16 +228,25 @@ export default function MyOrders() {
               const purposeStr = translatePurpose(o.details?.purpose)
               const dateLabel = language === 'te' ? 'తేదీ' : 'Date'
 
-              const detailsString = o.serviceType === 'drone' 
-                ? `${cropStr} • ${o.details.farmSize} ${t('dashboard.acres')} • ${dateLabel}: ${o.details.date}`
-                : `${purposeStr} • ${o.details.farmSize} ${t('dashboard.acres')} • ${dateLabel}: ${o.details.date}`
+              let detailsString = ''
+              if (o.serviceType === 'drone') {
+                detailsString = `${cropStr} • ${o.details?.farmSize || 1} ${t('dashboard.acres')} • ${dateLabel}: ${o.details?.date}`
+              } else if (o.serviceType === 'land') {
+                detailsString = `${purposeStr} • ${o.details?.farmSize || 1} ${t('dashboard.acres')} • ${dateLabel}: ${o.details?.date}`
+              } else if (o.serviceType === 'soil') {
+                detailsString = `Soil Sample Collection • ${o.details?.farmSize || 1} ${t('dashboard.acres')} • ${dateLabel}: ${o.details?.date}`
+              }
+              
+              let iconName = 'flight'
+              if (o.serviceType === 'land') iconName = 'square_foot'
+              if (o.serviceType === 'soil') iconName = 'biotech'
               
               return (
                 <div key={o.bookingId} className="bg-white rounded-xl border border-[#bfcaba] shadow-sm p-5">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-full bg-[#f3f3f3] flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-[#0d631b] text-[20px]">{o.serviceType === 'drone' ? 'flight' : 'square_foot'}</span>
+                        <span className="material-symbols-outlined text-[#0d631b] text-[20px]">{iconName}</span>
                       </div>
                       <div>
                         <div className="font-bold text-[#1a1c1c] mb-1">{o.bookingId} - {serviceName}</div>
