@@ -103,6 +103,8 @@ export default function ServicesManagement() {
     } finally {
       setLoadingBookings(false);
     }
+  }
+
   const updateBookingStatus = async (bookingId, newStatus) => {
     try {
       const res = await fetch(`${API_BASE}/api/services/bookings/${bookingId}/status`, {
