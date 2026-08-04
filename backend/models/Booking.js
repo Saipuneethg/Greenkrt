@@ -16,7 +16,7 @@ const BookingSchema = new mongoose.Schema({
   },
   serviceType: {
     type: String,
-    enum: ['drone', 'land'],
+    enum: ['drone', 'land', 'soil'],
     required: true,
   },
   details: {
@@ -30,8 +30,12 @@ const BookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Scheduled', 'Completed', 'Cancelled'],
+    enum: ['Pending', 'Scheduled', 'In Progress', 'Completed', 'Cancelled'],
     default: 'Pending',
+  },
+  deliveryPartner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
   cost: {
     type: Number,

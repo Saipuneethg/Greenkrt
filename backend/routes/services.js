@@ -114,9 +114,9 @@ router.get('/bookings', auth, async (req, res) => {
   try {
     let bookings;
     if (req.user.role === 'admin') {
-      bookings = await Booking.find({}).populate('user', 'firstName lastName phone email');
+      bookings = await Booking.find({}).populate('user', 'firstName lastName phone email').populate('deliveryPartner', 'firstName lastName phone');
     } else {
-      bookings = await Booking.find({ user: req.user.id }).populate('user', 'firstName lastName phone email');
+      bookings = await Booking.find({ user: req.user.id }).populate('user', 'firstName lastName phone email').populate('deliveryPartner', 'firstName lastName phone');
     }
     res.json(bookings);
   } catch (err) {
@@ -172,6 +172,28 @@ router.put('/bookings/:id/status', [auth, admin], async (req, res) => {
 
     booking.status = status;
     await booking.save();
+    res.json(booking);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   PUT /api/services/bookings/:id/assign
+// @desc    Assign delivery partner to booking (Admin only)
+// @access  Private/Admin
+router.put('/bookings/:id/assign', [auth, admin], async (req, res) => {
+  const { partnerId } = req.body;
+  try {
+    let booking = await Booking.findOne({ bookingId: req.params.id });
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    booking.deliveryPartner = partnerId;
+    await booking.save();
+    
+    // Populate partner details to return
+    booking = await booking.populate('deliveryPartner', 'firstName lastName phone');
+    
     res.json(booking);
   } catch (err) {
     console.error(err.message);

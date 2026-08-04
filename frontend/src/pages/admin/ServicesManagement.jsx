@@ -14,6 +14,24 @@ export default function ServicesManagement() {
   const [serviceBookings, setServiceBookings] = useState([])
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [deletingService, setDeletingService] = useState(null)
+  const [partners, setPartners] = useState([])
+
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/partners`, {
+          headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setPartners(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch partners', err)
+      }
+    }
+    fetchPartners()
+  }, [])
 
   const confirmDelete = async () => {
     if (deletingService) {
@@ -100,6 +118,25 @@ export default function ServicesManagement() {
       }
     } catch (err) {
       console.error('Failed to update status', err)
+    }
+  }
+
+  const handleAssignPartner = async (bookingId, partnerId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/services/bookings/${bookingId}/assign`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': sessionStorage.getItem('greenkrt_token')
+        },
+        body: JSON.stringify({ partnerId })
+      })
+      if (res.ok) {
+        const updatedBooking = await res.json()
+        setServiceBookings(prev => prev.map(b => b.bookingId === bookingId ? updatedBooking : b))
+      }
+    } catch (err) {
+      console.error('Failed to assign partner', err)
     }
   }
 
@@ -282,6 +319,16 @@ export default function ServicesManagement() {
                             <option value="In Progress">In Progress</option>
                             <option value="Completed">Completed</option>
                             <option value="Cancelled">Cancelled</option>
+                          </select>
+                          <select 
+                            onChange={(e) => handleAssignPartner(b.bookingId, e.target.value)}
+                            value={b.deliveryPartner?._id || ""}
+                            className="text-[11px] border border-[#bccbb9] text-[#40493d] rounded px-1 py-1 bg-white cursor-pointer"
+                          >
+                            <option value="" disabled>Assign Expert...</option>
+                            {partners.map(p => (
+                              <option key={p._id} value={p._id}>{p.firstName} {p.lastName}</option>
+                            ))}
                           </select>
                         </div>
                         <p className="text-sm text-[#40493d]">
