@@ -25,7 +25,11 @@ router.get('/', auth, async (req, res) => {
 // @desc    Sync user's cart (replaces entire items array)
 // @access  Private
 router.post('/sync', auth, async (req, res) => {
-  const { items } = req.body;
+  let { items } = req.body;
+  items = items.map(item => {
+    const { _id, ...rest } = item;
+    return rest;
+  });
   try {
     let cart = await Cart.findOne({ user: req.user.id });
     if (cart) {

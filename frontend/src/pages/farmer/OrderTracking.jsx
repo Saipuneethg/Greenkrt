@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import API_BASE from '../../config/api'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -13,7 +14,7 @@ export default function OrderTracking() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/orders', {
+        const res = await fetch(`${API_BASE}/api/orders`, {
           headers: {
             'x-auth-token': sessionStorage.getItem('greenkrt_token'),
           },

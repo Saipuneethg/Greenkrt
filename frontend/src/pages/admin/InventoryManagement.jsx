@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_BASE from '../../config/api'
 import { createPortal } from 'react-dom'
 import { useData } from '../../context/DataContext'
 
@@ -36,7 +37,7 @@ export default function InventoryManagement() {
 
   const fetchWarehouses = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/warehouses', {
+      const res = await fetch(`${API_BASE}/api/warehouses`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -54,7 +55,7 @@ export default function InventoryManagement() {
 
   const fetchTransfers = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/transfers', {
+      const res = await fetch(`${API_BASE}/api/transfers`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -80,7 +81,7 @@ export default function InventoryManagement() {
     if (!name || capacity === '') return
 
     try {
-      const res = await fetch('http://localhost:5000/api/warehouses', {
+      const res = await fetch(`${API_BASE}/api/warehouses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export default function InventoryManagement() {
     if (!editingWH) return
 
     try {
-      const res = await fetch(`http://localhost:5000/api/warehouses/${editingWH.warehouseId}`, {
+      const res = await fetch(`${API_BASE}/api/warehouses/${editingWH.warehouseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +157,7 @@ export default function InventoryManagement() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/transfers', {
+      const res = await fetch(`${API_BASE}/api/transfers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ export default function InventoryManagement() {
       onConfirm: async () => {
         setConfirmConfig({ show: false, message: '', onConfirm: null })
         try {
-          const res = await fetch(`http://localhost:5000/api/transfers/${transferId}/approve`, {
+          const res = await fetch(`${API_BASE}/api/transfers/${transferId}/approve`, {
             method: 'PUT',
             headers: {
               'x-auth-token': sessionStorage.getItem('greenkrt_token')
@@ -221,7 +222,7 @@ export default function InventoryManagement() {
       onConfirm: async () => {
         setConfirmConfig({ show: false, message: '', onConfirm: null })
         try {
-          const res = await fetch(`http://localhost:5000/api/transfers/${transferId}/reject`, {
+          const res = await fetch(`${API_BASE}/api/transfers/${transferId}/reject`, {
             method: 'PUT',
             headers: {
               'x-auth-token': sessionStorage.getItem('greenkrt_token')
@@ -255,7 +256,7 @@ export default function InventoryManagement() {
       onConfirm: async () => {
         setConfirmConfig({ show: false, message: '', onConfirm: null })
         try {
-          const res = await fetch(`http://localhost:5000/api/warehouses/${wh.warehouseId}`, {
+          const res = await fetch(`${API_BASE}/api/warehouses/${wh.warehouseId}`, {
             method: 'DELETE',
             headers: {
               'x-auth-token': sessionStorage.getItem('greenkrt_token')

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import API_BASE from '../config/api';
 
 const AuthContext = createContext();
 
@@ -14,7 +15,7 @@ export const AuthProvider = ({ children }) => {
       const token = sessionStorage.getItem('greenkrt_token');
       if (token) {
         try {
-          const res = await fetch('http://localhost:5000/api/auth/me', {
+          const res = await fetch(`${API_BASE}/api/auth/me`, {
             headers: { 'x-auth-token': token }
           });
           if (res.ok) {
@@ -54,8 +55,13 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem('greenkrt_token');
   };
 
+  const updateUser = (userData) => {
+    setUser(userData);
+    sessionStorage.setItem('greenkrt_user', JSON.stringify(userData));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_BASE from '../../config/api'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -10,7 +11,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/admin/analytics', {
+        const res = await fetch(`${API_BASE}/api/admin/analytics`, {
           headers: {
             'x-auth-token': sessionStorage.getItem('greenkrt_token'),
           },
@@ -34,36 +35,36 @@ export default function AdminDashboard() {
       label: t('admin_dashboard.active_farmers'), 
       value: data ? data.kpis.totalFarmers.toLocaleString() : '...', 
       icon: 'agriculture', 
-      trend: '+8% from last month', 
-      positive: true 
+      trend: data ? data.kpis.trends.farmerGrowth : '...', 
+      positive: data ? data.kpis.trends.farmerPositive : true 
     },
     { 
       label: t('admin_nav.orders'), 
       value: data ? data.kpis.totalOrders.toLocaleString() : '...', 
       icon: 'shopping_cart', 
-      trend: '+12% from last month', 
-      positive: true 
+      trend: data ? data.kpis.trends.orderGrowth : '...', 
+      positive: data ? data.kpis.trends.orderPositive : true 
     },
     { 
       label: t('admin_dashboard.total_sales'), 
       value: data ? `₹${data.kpis.totalRevenue.toLocaleString()}` : '...', 
       icon: 'payments', 
-      trend: '+15% from last month', 
-      positive: true 
+      trend: data ? data.kpis.trends.revenueGrowth : '...', 
+      positive: data ? data.kpis.trends.revenuePositive : true 
     },
     { 
       label: t('admin_dashboard.pending_orders'), 
       value: data ? data.kpis.pendingDeliveries.toString() : '...', 
       icon: 'local_shipping', 
-      trend: 'Needs attention', 
-      positive: false 
+      trend: data ? data.kpis.trends.pendingTrend : '...', 
+      positive: data ? data.kpis.trends.pendingPositive : false 
     },
     { 
       label: t('admin_dashboard.services_booked'), 
       value: data ? data.kpis.activeServices.toString() : '...', 
       icon: 'build', 
-      trend: 'Ongoing today', 
-      positive: true 
+      trend: data ? data.kpis.trends.servicesTrend : '...', 
+      positive: data ? data.kpis.trends.servicesPositive : true 
     },
   ]
 
@@ -111,7 +112,7 @@ export default function AdminDashboard() {
     : 1000;
   
   const monthlyRevenueData = data?.monthlyRevenue ? data.monthlyRevenue.map((m, idx) => {
-    const isCurrentMonth = idx === data.monthlyRevenue.length - 1;
+    const isCurrentMonth = idx === new Date().getMonth();
     const heightPercent = Math.max(10, Math.round((m.revenue / maxRevenue) * 90));
     return {
       label: m.label,
@@ -139,12 +140,9 @@ export default function AdminDashboard() {
     Others: '#a1b39c'
   }
 
-  const categoryShareData = data?.categoryShare || [
-    { category: 'Fertilizers', percentage: 45 },
-    { category: 'Pesticides', percentage: 28 },
-    { category: 'Micronutrients', percentage: 17 },
-    { category: 'Seeds', percentage: 10 },
-  ]
+  const categoryShareData = data?.categoryShare && data.categoryShare.length > 0
+    ? data.categoryShare
+    : []
 
   let accumPercent = 0
   const gradientParts = []
@@ -219,28 +217,38 @@ export default function AdminDashboard() {
         {/* Donut Chart */}
         <div className="lg:col-span-5 bg-white border border-[#bccbb9] rounded-lg p-4">
           <h2 className="font-semibold text-[#161d16] mb-4">Orders by Category</h2>
-          <div className="flex items-center justify-center h-48">
-            <div 
-              className="relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 shadow-inner"
-              style={{ background: conicGradient }}
-            >
-              <div className="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center">
-                <span className="text-xs text-[#3d4a3d]">Top Cat</span>
-                <span className="text-sm font-bold text-[#161d16] truncate max-w-[120px] px-2">{topCategory}</span>
-              </div>
+          {categoryShareData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-[#3d4a3d]">
+              <span className="material-symbols-outlined text-4xl text-[#bccbb9] mb-2">donut_large</span>
+              <p className="text-sm font-medium">No orders yet</p>
+              <p className="text-xs text-[#6d7a6d] mt-1">Category breakdown will appear here once orders are placed.</p>
             </div>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 mt-2">
-            {categoryShareData.map(item => (
-              <div key={item.category} className="flex items-center gap-1">
+          ) : (
+            <>
+              <div className="flex items-center justify-center h-48">
                 <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ background: categoryColors[item.category] || '#a1b39c' }}
-                ></div>
-                <span className="text-xs text-[#3d4a3d]">{item.category} ({item.percentage}%)</span>
+                  className="relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-500 shadow-inner"
+                  style={{ background: conicGradient }}
+                >
+                  <div className="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center">
+                    <span className="text-xs text-[#3d4a3d]">Top Cat</span>
+                    <span className="text-sm font-bold text-[#161d16] truncate max-w-[120px] px-2">{topCategory}</span>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+              <div className="flex flex-wrap justify-center gap-3 mt-2">
+                {categoryShareData.map(item => (
+                  <div key={item.category} className="flex items-center gap-1">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ background: categoryColors[item.category] || '#a1b39c' }}
+                    ></div>
+                    <span className="text-xs text-[#3d4a3d]">{item.category} ({item.percentage}%)</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

@@ -28,6 +28,17 @@ router.get('/', auth, async (req, res) => {
     
     res.json(response.data);
   } catch (err) {
+    if (err.response?.status === 404) {
+      try {
+        const apiKey = process.env.WEATHER_API_KEY;
+        const fallback = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
+          params: { q: 'Guntur', appid: apiKey, units: 'metric' }
+        });
+        return res.json(fallback.data);
+      } catch (fallbackErr) {
+        return res.status(200).json(null); // Silent fail to frontend
+      }
+    }
     console.error('Weather fetch error:', err.response?.data || err.message);
     res.status(err.response?.status || 500).json(err.response?.data || { message: 'Server Error' });
   }

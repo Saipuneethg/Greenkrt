@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_BASE from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import LocationInput from '../../components/LocationInput'
@@ -43,7 +44,7 @@ export default function BookLandMeasurement() {
     setLoading(true)
 
     try {
-      const res = await fetch('http://localhost:5000/api/services/bookings', {
+      const res = await fetch(`${API_BASE}/api/services/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

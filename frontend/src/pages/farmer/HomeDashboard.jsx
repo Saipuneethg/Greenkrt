@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import axios from 'axios'
+import API_BASE from '../../config/api'
 
 const farmingQuotes = {
   en: [
@@ -36,7 +37,7 @@ export default function HomeDashboard() {
   useEffect(() => {
     const fetchPlots = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/farms', {
+        const res = await axios.get(`${API_BASE}/api/farms`, {
           headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
         })
         setPlots(res.data)
@@ -46,6 +47,25 @@ export default function HomeDashboard() {
     }
     fetchPlots()
   }, [])
+
+  // Season-aware fallback weather — works for any time of year regardless of rain/sun/winter
+  const getSeasonalDefault = () => {
+    const month = new Date().getMonth() // 0=Jan, 11=Dec
+    const city = user?.district?.split(',')[0]?.trim() || 'Guntur'
+    if (month >= 2 && month <= 4) {
+      // March–May: Summer
+      return { temp: 38, description: 'Clear', icon: '01d', city, iconUrl: null, seasonal: true }
+    } else if (month >= 5 && month <= 8) {
+      // June–September: Monsoon
+      return { temp: 29, description: 'Rain', icon: '10d', city, iconUrl: null, seasonal: true }
+    } else if (month >= 9 && month <= 10) {
+      // October–November: Post-Monsoon
+      return { temp: 32, description: 'Clouds', icon: '02d', city, iconUrl: null, seasonal: true }
+    } else {
+      // December–February: Winter
+      return { temp: 22, description: 'Mist', icon: '50d', city, iconUrl: null, seasonal: true }
+    }
+  }
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -61,7 +81,7 @@ export default function HomeDashboard() {
           city = user.district.split(',')[0].trim()
         }
 
-        const res = await axios.get(`http://localhost:5000/api/weather`, {
+        const res = await axios.get(`${API_BASE}/api/weather`, {
           params: { city },
           headers: {
             'x-auth-token': sessionStorage.getItem('greenkrt_token')
@@ -73,17 +93,20 @@ export default function HomeDashboard() {
           temp: Math.round(data.main.temp),
           iconUrl: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
           description: data.weather[0].main,
-          city: data.name
+          city: data.name,
+          seasonal: false  // real API data
         })
       } catch (err) {
-        console.error("Failed to fetch weather", err)
+        console.error("Failed to fetch weather, using seasonal default", err)
+        // Use season-aware default so UI always shows meaningful data
+        setWeatherData(getSeasonalDefault())
       }
     }
     fetchWeather()
 
     const fetchOrders = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/orders', {
+        const res = await axios.get(`${API_BASE}/api/orders`, {
           headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
         })
         const active = res.data.find(o => o.status !== 'Delivered')
@@ -96,7 +119,7 @@ export default function HomeDashboard() {
 
     const fetchSoilTests = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/soil-tests', {
+        const res = await axios.get(`${API_BASE}/api/soil-tests`, {
           headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
         })
         if (res.data && res.data.length > 0) {
@@ -110,7 +133,7 @@ export default function HomeDashboard() {
 
     const fetchBookings = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/services/bookings', {
+        const res = await axios.get(`${API_BASE}/api/services/bookings`, {
           headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
         })
         setBookings(res.data)
@@ -122,6 +145,7 @@ export default function HomeDashboard() {
   }, [user])
 
   const getDynamicWeatherMessage = (weather) => {
+    // Brief loading state — before seasonal default or real data is set
     if (!weather) {
       const quotes = farmingQuotes[language] || farmingQuotes.en;
       const quote = quotes[new Date().getDate() % quotes.length];
@@ -136,30 +160,32 @@ export default function HomeDashboard() {
     const condition = weather.description.toLowerCase();
     const temp = weather.temp;
     const isTelugu = language === 'te';
+    // Add "(Estimated)" suffix when showing seasonal fallback data
+    const estSuffix = weather.seasonal ? (isTelugu ? ' (అంచనా)' : ' (Estimated)') : '';
 
     if (condition.includes('rain') || condition.includes('drizzle') || condition.includes('thunderstorm')) {
       return {
-        msg: isTelugu 
+        msg: (isTelugu 
           ? `${weather.city} లో వర్షం కురిసే అవకాశం ఉంది. పురుగుమందుల పిచికారీని వాయిదా వేయండి మరియు పొలంలో నీటి నిల్వ లేకుండా చూసుకోండి.`
-          : `Rain expected in ${weather.city}. Delay pesticide spraying and ensure proper field drainage.`,
+          : `Rain expected in ${weather.city}. Delay pesticide spraying and ensure proper field drainage.`) + estSuffix,
         color: 'bg-[#d3e3fd] text-[#004a77]',
         border: 'border-[#a8c7fa]',
         icon: 'rainy'
       };
     } else if (temp >= 35) {
       return {
-        msg: isTelugu
+        msg: (isTelugu
           ? `${weather.city} లో అధిక ఉష్ణోగ్రత హెచ్చరిక (${temp}°C). ఉదయం లేదా సాయంత్రం వేళల్లో పంటలకు నీరు పెట్టండి.`
-          : `High temperature alert (${temp}°C) in ${weather.city}. Irrigate crops in the early morning or evening.`,
+          : `High temperature alert (${temp}°C) in ${weather.city}. Irrigate crops in the early morning or evening.`) + estSuffix,
         color: 'bg-[#ffdad6] text-[#93000a]',
         border: 'border-[#ffb4ab]',
         icon: 'local_fire_department'
       };
     } else if (temp <= 15) {
       return {
-        msg: isTelugu
+        msg: (isTelugu
           ? `${weather.city} లో తక్కువ ఉష్ణోగ్రత (${temp}°C). చలి ప్రభావం నుండి పంటలను రక్షించండి.`
-          : `Cold temperature (${temp}°C) in ${weather.city}. Protect sensitive crops from potential frost.`,
+          : `Cold temperature (${temp}°C) in ${weather.city}. Protect sensitive crops from potential frost.`) + estSuffix,
         color: 'bg-[#e8def8] text-[#4a4458]',
         border: 'border-[#d0bcff]',
         icon: 'ac_unit'
@@ -173,9 +199,9 @@ export default function HomeDashboard() {
         else if (desc.toLowerCase() === 'mist') desc = 'పొగమంచు';
       }
       return {
-        msg: isTelugu
+        msg: (isTelugu
           ? `${weather.city} లో సాధారణ వాతావరణ పరిస్థితులు (${temp}°C, ${desc}) ఉన్నాయి. పొలం పనులకు ఇది అనుకూలమైన సమయం!`
-          : `Optimal weather conditions (${temp}°C, ${desc}) in ${weather.city}. Perfect time for field operations!`,
+          : `Optimal weather conditions (${temp}°C, ${desc}) in ${weather.city}. Perfect time for field operations!`) + estSuffix,
         color: 'bg-[#c4eed0] text-[#0d631b]',
         border: 'border-[#9cf49c]',
         icon: 'agriculture'
@@ -266,21 +292,42 @@ export default function HomeDashboard() {
       }
     })
 
-    // 3. Crop health inspection goals for each plot
-    plots.forEach((p, idx) => {
-      goalsList.push({
-        id: `inspect_${p._id || idx}`,
-        type: 'inspect',
-        title: t('dashboard.inspect_health').replace('{crop}', translateCrop(p.crop) || 'crop'),
-        sub: t('dashboard.recommended_for').replace('{farm}', p.name || 'your farm'),
-        icon: 'eco'
+    // 3. Real suggestions from AI report phases
+    if (latestSoilTest?.results?.phases) {
+      const phases = latestSoilTest.results.phases
+      const phaseKeys = ['sowing', 'vegetative', 'flowering', 'fruiting']
+      
+      phaseKeys.forEach(phase => {
+        if (phases[phase]) {
+          phases[phase].forEach((item, idx) => {
+            if (item.productName && item.productName !== '...') {
+              goalsList.push({
+                id: `soil_phase_${phase}_${idx}`,
+                type: 'soil',
+                title: language === 'te' 
+                  ? `${item.productName} ని వాడండి (${item.amount || 'తగినంత'})` 
+                  : `Apply ${item.productName} (${item.amount || 'Required amount'})`,
+                sub: language === 'te' 
+                  ? `${phase.toUpperCase()} దశ: ${item.reason}` 
+                  : `${phase.toUpperCase()} Phase: ${item.reason}`,
+                icon: 'compost'
+              })
+            }
+          })
+        }
       })
-    })
+    }
 
     return goalsList
   }
 
   const goals = getGoals()
+
+  const calculateReadiness = () => {
+    return latestSoilTest?.results?.score || 0;
+  }
+  const readinessPercent = calculateReadiness();
+  const strokeDashoffset = 251.2 - (251.2 * readinessPercent) / 100;
 
   return (
     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -314,11 +361,18 @@ export default function HomeDashboard() {
               <div className="relative w-32 h-32 flex items-center justify-center">
                 <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" fill="transparent" stroke="#e2e2e2" strokeWidth="8" />
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#0d631b" strokeWidth="8" strokeDasharray="251.2" strokeDashoffset="95.4" strokeLinecap="round" />
+                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#0d631b" strokeWidth="8" strokeDasharray="251.2" strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
                 </svg>
-                <span className="text-2xl font-bold text-[#0d631b] z-10">62%</span>
+                {readinessPercent > 0 ? (
+                  <span className="text-2xl font-bold text-[#0d631b] z-10">{readinessPercent}%</span>
+                ) : (
+                  <Link to={plots.length === 0 ? "/dashboard/home" : "/dashboard/soil-test"} className="z-10 flex flex-col items-center cursor-pointer hover:scale-105 transition-transform bg-white/80 rounded-full p-2">
+                    <span className="material-symbols-outlined text-[#0d631b]">add</span>
+                    <span className="text-sm font-bold text-[#0d631b]">0%</span>
+                  </Link>
+                )}
               </div>
-              <span className="text-xs font-bold text-[#40493d] mt-2 text-center">{t('dashboard.season_readiness')}</span>
+              <span className="text-xs font-bold text-[#40493d] mt-2 text-center">Soil Readiness</span>
             </div>
           </div>
         </div>
@@ -421,8 +475,8 @@ export default function HomeDashboard() {
                     <div className="w-full bg-[#e2e2e2] rounded-full h-2.5">
                       <div className="bg-[#0d631b] h-2.5 rounded-full" style={{ width: `${latestSoilTest.results.score}%` }}></div>
                     </div>
-                    <p className="text-xs text-[#40493d] mt-2 text-right truncate">
-                      {latestSoilTest.results.recommendations?.[0] || 'Good condition.'}
+                    <p className="text-xs text-[#40493d] mt-2 text-right truncate" title={latestSoilTest.results.todaysAction}>
+                      {latestSoilTest.results.todaysAction || 'Good condition.'}
                     </p>
                   </div>
                 ) : (
@@ -459,39 +513,50 @@ export default function HomeDashboard() {
                 {t('dashboard.weather')} - {weatherData ? weatherData.city : (user?.district?.split(',')[0] || 'Guntur')}
               </h2>
               <div className="text-2xl font-bold text-[#0d631b] flex items-center gap-2">
-                {weatherData ? `${weatherData.temp}°C` : '32°C'}
-                {weatherData ? (
+                {weatherData ? `${weatherData.temp}°C` : '--°C'}
+                {weatherData?.iconUrl ? (
                   <img src={weatherData.iconUrl} alt="Weather icon" className="w-10 h-10 -ml-1 drop-shadow-sm" />
+                ) : weatherData?.icon ? (
+                  // Show a Material icon when using seasonal fallback (no image URL)
+                  <span className="material-symbols-outlined text-3xl">
+                    {weatherData.description === 'Rain' ? 'rainy'
+                      : weatherData.description === 'Clear' ? 'sunny'
+                      : weatherData.description === 'Clouds' ? 'partly_cloudy_day'
+                      : weatherData.description === 'Mist' ? 'foggy'
+                      : 'partly_cloudy_day'}
+                  </span>
                 ) : (
                   <span className="material-symbols-outlined text-3xl">partly_cloudy_day</span>
                 )}
               </div>
             </div>
-            <div className="text-right">
-              {(!weatherData || ['Rain', 'Thunderstorm', 'Drizzle'].includes(weatherData.description)) ? (
-                <span className="inline-block bg-[#ffb957] text-[#643f00] text-xs px-2 py-1 rounded font-bold border border-[#986200]">
-                  {t('dashboard.rain_expected')}
-                </span>
-              ) : (
+            <div className="text-right flex flex-col items-end gap-1">
+              {weatherData ? (
                 <span className="inline-block bg-[#cfe6c9] text-[#19722b] text-xs px-2 py-1 rounded font-bold border border-[#0d631b]">
                   {weatherData.description}
+                </span>
+              ) : (
+                <span className="inline-block bg-[#e2e2e2] text-[#40493d] text-xs px-2 py-1 rounded font-bold border border-[#bfcaba]">
+                  Loading...
+                </span>
+              )}
+              {weatherData?.seasonal && (
+                <span className="inline-block bg-[#fff8e1] text-[#7a5c00] text-[10px] px-2 py-0.5 rounded font-semibold border border-[#ffe082]">
+                  ⚡ Estimated — API offline
                 </span>
               )}
             </div>
           </div>
-          {/* Note: The 3-day forecast requires a different API endpoint (OneCall or Forecast), so leaving it as mock or you can hide it later. */}
-          <div className="px-4 pb-4 grid grid-cols-3 gap-2 relative z-10">
-            {[
-              { day: t('dashboard.thu'), icon: 'rainy', temp: '28°C' },
-              { day: t('dashboard.fri'), icon: 'thunderstorm', temp: '25°C' },
-              { day: t('dashboard.sat'), icon: 'sunny', temp: '34°C' },
-            ].map(d => (
-              <div key={d.day} className="bg-white/80 backdrop-blur-sm rounded-lg p-2 text-center border border-[#e2e2e2]">
-                <div className="text-xs text-[#40493d]">{d.day}</div>
-                <span className="material-symbols-outlined text-[#0d631b]">{d.icon}</span>
-                <div className="text-xs font-bold text-[#1a1c1c]">{d.temp}</div>
-              </div>
-            ))}
+          <div className="px-4 pb-4 relative z-10">
+            {weatherData && !weatherData.seasonal && (
+              <p className="text-xs text-[#707a6c] text-center">{weatherData.description} • Live data from OpenWeatherMap</p>
+            )}
+            {weatherData?.seasonal && (
+              <p className="text-xs text-[#707a6c] text-center">Showing estimated seasonal data. Live weather unavailable.</p>
+            )}
+            {!weatherData && (
+              <p className="text-xs text-[#bfcaba] text-center">Fetching weather data...</p>
+            )}
           </div>
         </div>
 

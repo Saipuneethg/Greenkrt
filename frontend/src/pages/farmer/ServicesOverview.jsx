@@ -24,7 +24,8 @@ export default function ServicesOverview() {
           const title = tIdx !== -1 ? t(`services.items.${tIdx}.title`) : s.name || s.title;
           const desc = tIdx !== -1 ? t(`services.items.${tIdx}.desc`) : s.desc;
           const badge = tIdx !== -1 && s.badge ? t(`services.items.${tIdx}.badge`) : s.badge;
-          const price = tIdx !== -1 ? t(`services.items.${tIdx}.price`) : s.basePrice || s.price;
+          // Always use the dynamic price from the database so admin edits reflect immediately
+          const price = s.basePrice || s.price || (tIdx !== -1 ? t(`services.items.${tIdx}.price`) : '');
 
           return (
             <div key={idx} className="bg-white rounded-xl border border-[#bfcaba] shadow-sm overflow-hidden hover:shadow-md transition-shadow">

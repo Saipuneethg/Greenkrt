@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_BASE from '../../config/api'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../../context/LanguageContext'
 
@@ -19,7 +20,7 @@ export default function OrderManagement() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const res = await fetch(`${API_BASE}/api/orders`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -35,7 +36,7 @@ export default function OrderManagement() {
 
   const fetchPartners = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/delivery-partners', {
+      const res = await fetch(`${API_BASE}/api/admin/delivery-partners`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -60,7 +61,7 @@ export default function OrderManagement() {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +83,7 @@ export default function OrderManagement() {
   const handleAssignPartner = async (orderId, partnerId) => {
     if (!partnerId) return
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId}/assign`, {
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/assign`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -5,12 +5,12 @@ import { useLanguage } from '../context/LanguageContext'
 import LocationInput from '../components/LocationInput'
 import API_BASE from '../config/api'
 
-export default function SignUpPage() {
+export default function AdminSignUpPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
   const { t, language, setLanguage } = useLanguage()
 
-  const [role, setRole] = useState('farmer')
+  const [role, setRole] = useState('admin')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -117,8 +117,13 @@ export default function SignUpPage() {
         </div>
 
         <div className="w-full max-w-md">
-          <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">{t('auth.signup_title')}</h1>
-          <p className="text-[#40493d] mb-6">{t('auth.signup_subtitle')}</p>
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-700 text-center rounded-lg flex flex-col items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-blue-500 text-4xl">admin_panel_settings</span>
+            <strong className="text-xl">Admin Registration</strong>
+            <p className="text-sm">Create an internal staff account</p>
+          </div>
+          <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">Create Admin Account</h1>
+          <p className="text-[#40493d] mb-6">Join the internal team.</p>
 
           {/* Role selection removed, defaults to farmer */}
 
@@ -216,7 +221,7 @@ export default function SignUpPage() {
 
           <p className="text-center mt-6 text-sm text-[#40493d]">
             {t('auth.already_have')}{' '}
-            <Link to="/login" className="text-[#0d631b] font-semibold hover:underline">{t('auth.signin_here')}</Link>
+            <Link to="/admin-login" className="text-blue-600 font-semibold hover:underline">{t('auth.signin_here')}</Link>
           </p>
         </div>
       </div>

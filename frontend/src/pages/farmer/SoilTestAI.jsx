@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import API_BASE from '../../config/api'
 import { useLanguage } from '../../context/LanguageContext'
 import { useCart } from '../../context/CartContext'
 
@@ -6,7 +7,6 @@ export default function SoilTestAI() {
   const { t } = useLanguage()
   const { addToCart, cartCount, toggleCart } = useCart()
   const [requests, setRequests] = useState([])
-  const [soilType, setSoilType] = useState('')
   const [prevCrop, setPrevCrop] = useState('')
   const [cropPlanned, setCropPlanned] = useState('')
   const [reportFile, setReportFile] = useState(null)
@@ -22,7 +22,7 @@ export default function SoilTestAI() {
 
   const fetchSoilTests = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/soil-tests', {
+      const res = await fetch(`${API_BASE}/api/soil-tests`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -52,12 +52,11 @@ export default function SoilTestAI() {
 
     try {
       let reqBody = new FormData();
-      reqBody.append('soilType', soilType);
       reqBody.append('prevCrop', prevCrop);
       reqBody.append('cropPlanned', cropPlanned);
       reqBody.append('reportFile', reportFile);
 
-      const res = await fetch('http://localhost:5000/api/soil-tests', {
+      const res = await fetch(`${API_BASE}/api/soil-tests`, {
         method: 'POST',
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token')
@@ -66,7 +65,6 @@ export default function SoilTestAI() {
       })
 
       if (res.ok) {
-        setSoilType('')
         setPrevCrop('')
         setCropPlanned('')
         setReportFile(null)
@@ -90,7 +88,7 @@ export default function SoilTestAI() {
 
   const handleDeleteReport = async (requestId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/soil-tests/${requestId}`, {
+      const res = await fetch(`${API_BASE}/api/soil-tests/${requestId}`, {
         method: 'DELETE',
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token')
@@ -123,6 +121,31 @@ export default function SoilTestAI() {
     showToast(`Added ${item.productName} to cart!`);
   }
 
+  const handleAddAllToCart = () => {
+    if (!activeReport?.results?.phases) return;
+    let count = 0;
+    ['sowing', 'vegetative', 'flowering', 'fruiting'].forEach(phase => {
+      if (activeReport.results.phases[phase]) {
+        activeReport.results.phases[phase].forEach(item => {
+          if (item.productId && item.productId !== "...") {
+            addToCart({
+              id: item.productId,
+              name: item.productName,
+              price: item.productPrice || 500,
+              image: '🌿'
+            });
+            count++;
+          }
+        });
+      }
+    });
+    if (count > 0) {
+      showToast(`Added ${count} items to cart!`);
+    } else {
+      showToast('No specific fertilizers available to add.');
+    }
+  }
+
   const phaseTitles = {
     sowing: 'Phase 1: Sowing (1 to 4 Weeks)',
     vegetative: 'Phase 2: Vegetative (4 to 8 Weeks)',
@@ -143,15 +166,6 @@ export default function SoilTestAI() {
             <p className="text-xs text-white/80">{t('ai_soil.report_id')} {activeReport.requestId} • {activeReport.soilType ? (t('soil_types.' + activeReport.soilType.toLowerCase().replace(/ /g, '_')) !== 'soil_types.' + activeReport.soilType.toLowerCase().replace(/ /g, '_') ? t('soil_types.' + activeReport.soilType.toLowerCase().replace(/ /g, '_')) : activeReport.soilType) : t('ai_soil.unknown_soil')}</p>
           </div>
           <div className="flex gap-4 items-center">
-            <button onClick={toggleCart} className="relative text-white hover:text-[#d3e3cd] transition-colors mr-2 flex items-center">
-              <span className="material-symbols-outlined text-[24px]">shopping_cart</span>
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-[#ffb957] text-[#643f00] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#0d631b]">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-
             {activeReport.reportUrl && (
               <a href={`http://localhost:5000${activeReport.reportUrl}`} target="_blank" rel="noreferrer" className="text-sm font-bold bg-white text-[#0d631b] px-3 py-1.5 rounded hover:bg-[#eaf4e7] transition-colors">
                 {t('ai_soil.view_orig_pdf')}
@@ -206,10 +220,16 @@ export default function SoilTestAI() {
 
           {results?.phases && (
             <div className="bg-white rounded-xl border border-[#bfcaba] p-6 shadow-sm">
-              <h3 className="font-bold text-lg text-[#1a1c1c] mb-6 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#0d631b]">calendar_month</span>
-                4-Phase Fertilizer Schedule
-              </h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-lg text-[#1a1c1c] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#0d631b]">calendar_month</span>
+                  4-Phase Fertilizer Schedule
+                </h3>
+                <button onClick={handleAddAllToCart} className="bg-[#f0f6ec] hover:bg-[#d4ebd0] text-[#0d631b] border border-[#0d631b] text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                  <span className="material-symbols-outlined text-[18px]">shopping_cart_checkout</span>
+                  Add All to Cart
+                </button>
+              </div>
               <div className="space-y-6">
                 {['sowing', 'vegetative', 'flowering', 'fruiting'].map(phase => (
                   <div key={phase} className="border-l-2 border-[#0d631b] pl-4 relative">
@@ -227,6 +247,11 @@ export default function SoilTestAI() {
                               </button>
                             )}
                           </div>
+                          {item.amount && (
+                            <div className="text-sm font-bold text-[#1a1c1c] mb-1">
+                              Dosage: {item.amount}
+                            </div>
+                          )}
                           <div className="text-sm text-[#40493d]">{item.reason}</div>
                         </div>
                       ))}
@@ -294,24 +319,11 @@ export default function SoilTestAI() {
               <div>
                 <label className="block text-sm font-semibold text-[#1a1c1c] mb-2">{t('ai_soil.report_file')} <span className="text-red-500">*</span></label>
                 <div className="border-2 border-dashed border-[#bfcaba] rounded-xl p-6 text-center bg-[#fafdf9] hover:bg-[#f0f6ec] transition-colors cursor-pointer relative">
-                  <input required type="file" onChange={e => setReportFile(e.target.files[0])} accept=".pdf,image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  <input required type="file" onChange={e => setReportFile(e.target.files[0])} accept=".pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                   <span className="material-symbols-outlined text-[#0d631b] text-4xl mb-2">cloud_upload</span>
                   <p className="text-sm font-bold text-[#1a1c1c]">{reportFile ? reportFile.name : t('ai_soil.click_drag')}</p>
                   <p className="text-xs text-[#40493d] mt-1">{t('ai_soil.supports')}</p>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#1a1c1c] mb-1">{t('ai_soil.soil_type')}</label>
-                <select value={soilType} onChange={e => setSoilType(e.target.value)} className="w-full h-11 px-3 border border-[#bfcaba] rounded-lg focus:outline-none focus:border-[#0d631b] focus:ring-1 focus:ring-[#0d631b] bg-white text-[#1a1c1c]">
-                  <option value="">{t('ai_soil.select_soil')}</option>
-                  <option value="Black Cotton Soil">Black Cotton Soil</option>
-                  <option value="Red Soil">Red Soil</option>
-                  <option value="Alluvial Soil">Alluvial Soil</option>
-                  <option value="Laterite Soil">Laterite Soil</option>
-                  <option value="Sandy Soil">Sandy Soil</option>
-                  <option value="Clayey Soil">Clayey Soil</option>
-                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-2">

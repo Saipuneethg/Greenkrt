@@ -183,15 +183,15 @@ router.get('/analytics', [auth, admin], async (req, res) => {
       ]
     });
 
-    // Calculate monthly revenue for last 6 months
-    const last6Months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      last6Months.push({
+    // Calculate monthly revenue for the entire current year
+    const currentYearMonths = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(currentYear, i, 1);
+      currentYearMonths.push({
         monthName: d.toLocaleString('default', { month: 'short' }),
-        monthNum: d.getMonth(),
-        year: d.getFullYear(),
+        monthNum: i,
+        year: currentYear,
         revenue: 0
       });
     }
@@ -202,7 +202,7 @@ router.get('/analytics', [auth, admin], async (req, res) => {
     // Calculate revenue per month
     allOrders.forEach(order => {
       const orderDate = new Date(order.createdAt);
-      const match = last6Months.find(m => m.monthNum === orderDate.getMonth() && m.year === orderDate.getFullYear());
+      const match = currentYearMonths.find(m => m.monthNum === orderDate.getMonth() && m.year === orderDate.getFullYear());
       if (match) {
         match.revenue += order.totalAmount;
       }
@@ -242,14 +242,26 @@ router.get('/analytics', [auth, admin], async (req, res) => {
           });
         }
       });
-    } else {
-      categoryShare.push(
-        { category: 'Fertilizers', count: 0, percentage: 45 },
-        { category: 'Pesticides', count: 0, percentage: 28 },
-        { category: 'Micronutrients', count: 0, percentage: 17 },
-        { category: 'Seeds', count: 0, percentage: 10 }
-      );
     }
+
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const newFarmersThisMonth = await User.countDocuments({ role: 'farmer', createdAt: { $gte: startOfThisMonth } });
+    const newFarmersLastMonth = await User.countDocuments({ role: 'farmer', createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth } });
+    const farmerGrowth = newFarmersLastMonth === 0 ? (newFarmersThisMonth > 0 ? 100 : 0) : Math.round(((newFarmersThisMonth - newFarmersLastMonth) / newFarmersLastMonth) * 100);
+
+    const ordersThisMonth = await Order.countDocuments({ createdAt: { $gte: startOfThisMonth } });
+    const ordersLastMonth = await Order.countDocuments({ createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth } });
+    const orderGrowth = ordersLastMonth === 0 ? (ordersThisMonth > 0 ? 100 : 0) : Math.round(((ordersThisMonth - ordersLastMonth) / ordersLastMonth) * 100);
+
+    const revenueThisMonth = allOrders.filter(o => new Date(o.createdAt) >= startOfThisMonth).reduce((sum, o) => sum + o.totalAmount, 0);
+    const revenueLastMonth = allOrders.filter(o => new Date(o.createdAt) >= startOfLastMonth && new Date(o.createdAt) < startOfThisMonth).reduce((sum, o) => sum + o.totalAmount, 0);
+    const revenueGrowth = revenueLastMonth === 0 ? (revenueThisMonth > 0 ? 100 : 0) : Math.round(((revenueThisMonth - revenueLastMonth) / revenueLastMonth) * 100);
+
+    const servicesToday = await Booking.countDocuments({ createdAt: { $gte: startOfToday } });
 
     res.json({
       kpis: {
@@ -259,6 +271,18 @@ router.get('/analytics', [auth, admin], async (req, res) => {
         activeServices,
         pendingDeliveries,
         lowStockCount,
+        trends: {
+          farmerGrowth: farmerGrowth >= 0 ? `+${farmerGrowth}% from last month` : `${farmerGrowth}% from last month`,
+          farmerPositive: farmerGrowth >= 0,
+          orderGrowth: orderGrowth >= 0 ? `+${orderGrowth}% from last month` : `${orderGrowth}% from last month`,
+          orderPositive: orderGrowth >= 0,
+          revenueGrowth: revenueGrowth >= 0 ? `+${revenueGrowth}% from last month` : `${revenueGrowth}% from last month`,
+          revenuePositive: revenueGrowth >= 0,
+          pendingTrend: pendingDeliveries > 0 ? 'Needs attention' : 'All clear',
+          pendingPositive: pendingDeliveries === 0,
+          servicesTrend: servicesToday > 0 ? `${servicesToday} booked today` : 'No bookings today',
+          servicesPositive: servicesToday > 0
+        }
       },
       orderStats: {
         Processing: processingCount,
@@ -269,7 +293,7 @@ router.get('/analytics', [auth, admin], async (req, res) => {
       recentServices,
       newRegistrations,
       unassignedOrders,
-      monthlyRevenue: last6Months.map(m => ({ label: m.monthName, revenue: m.revenue })),
+      monthlyRevenue: currentYearMonths.map(m => ({ label: m.monthName, revenue: m.revenue })),
       categoryShare
     });
   } catch (err) {

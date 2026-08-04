@@ -59,14 +59,18 @@ router.post('/', [auth, upload.single('reportFile')], async (req, res) => {
     });
 
     if (req.file) {
+      if (req.file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ message: 'Only PDF files are supported for soil test reports.' });
+      }
+
       // 1. Extract text from PDF
       const pdfData = await pdf(req.file.buffer);
-      const text = pdfData.text;
+      const text = pdfData.text || '';
 
-      // 2. Pass 1: Ask Groq for required nutrients and basic stats
+      // 2. Pass 1: Ask Groq for required nutrients, basic stats, and the soil type
       const pass1Prompt = `You are an expert soil analyst. Read the following soil test report and extract the soil conditions.
 Return ONLY a valid JSON object in this exact format, with no markdown formatting:
-{"needs": ["Nitrogen", "Zinc", "Potassium"], "ph": 6.8, "carbon": 1.2, "nitrogen": "Low", "phosphorus": "Medium", "potassium": "High", "score": 85}
+{"soilType": "Unknown", "needs": ["Nitrogen", "Zinc", "Potassium"], "ph": 6.8, "carbon": 1.2, "nitrogen": "Low", "phosphorus": "Medium", "potassium": "High", "score": 85}
 Text: ${text.substring(0, 5000)}`;
 
       const pass1Response = await groq.chat.completions.create({
@@ -77,6 +81,7 @@ Text: ${text.substring(0, 5000)}`;
       });
 
       const pass1Json = JSON.parse(pass1Response.choices[0].message.content);
+      newRequest.soilType = pass1Json.soilType || 'Unknown';
 
       // 3. Query DB for available fertilizers
       const products = await Product.find({ category: { $in: ['Fertilizers', 'Micronutrients', 'Pesticides'] }, stock: { $gt: 0 } });
@@ -92,8 +97,10 @@ Text: ${text.substring(0, 5000)}`;
 Soil Analysis: ${JSON.stringify(pass1Json)}
 Available Fertilizers: ${JSON.stringify(availableFertilizers)}
 Planned Crop: ${cropPlanned}
+Soil Type: ${newRequest.soilType}
 
 Task: Provide a fertilizer recommendation schedule divided into 4 phases: sowing, vegetative, flowering, fruiting.
+Take the Soil Type into account to give highly effective, tailored recommendations.
 You MUST ONLY recommend fertilizers from the "Available Fertilizers" list provided above.
 Provide 'todaysAction' which is the immediate next step.
 
@@ -101,10 +108,10 @@ Return ONLY a valid JSON object in this exact format, no markdown:
 {
   "todaysAction": "Apply Urea (Plot A) before 10 AM",
   "phases": {
-    "sowing": [{ "productName": "...", "productId": "...", "productPrice": 100, "reason": "..." }],
-    "vegetative": [{ "productName": "...", "productId": "...", "productPrice": 100, "reason": "..." }],
-    "flowering": [{ "productName": "...", "productId": "...", "productPrice": 100, "reason": "..." }],
-    "fruiting": [{ "productName": "...", "productId": "...", "productPrice": 100, "reason": "..." }]
+    "sowing": [{ "productName": "...", "productId": "...", "productPrice": 100, "amount": "50 kg/acre", "reason": "..." }],
+    "vegetative": [{ "productName": "...", "productId": "...", "productPrice": 100, "amount": "20 kg/acre", "reason": "..." }],
+    "flowering": [{ "productName": "...", "productId": "...", "productPrice": 100, "amount": "10 Liters/acre", "reason": "..." }],
+    "fruiting": [{ "productName": "...", "productId": "...", "productPrice": 100, "amount": "5 kg/acre", "reason": "..." }]
   }
 }`;
 
@@ -161,6 +168,8 @@ router.put('/:id', [auth, admin], async (req, res) => {
         phosphorus: phosphorus !== undefined ? phosphorus : request.results.phosphorus,
         potassium: potassium !== undefined ? potassium : request.results.potassium,
         recommendations: recommendations || request.results.recommendations || [],
+        todaysAction: request.results.todaysAction,
+        phases: request.results.phases
       };
     }
 

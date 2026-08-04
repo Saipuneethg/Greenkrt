@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useData } from '../context/DataContext'
 import { useCart } from '../context/CartContext'
 import { createPortal } from 'react-dom'
+import API_BASE from '../config/api'
 
 const LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -26,16 +27,17 @@ export default function FarmerLayout() {
   const { user, logout } = useAuth()
   const { language, setLanguage, t } = useLanguage()
   const { fetchProducts, fetchServices } = useData()
-  const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, isCartOpen, setIsCartOpen } = useCart()
+  const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, isCartOpen, setIsCartOpen, cartCount } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [cartError, setCartError] = useState('')
   const [cartSuccess, setCartSuccess] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const handleCheckout = async () => {
     setCartError('')
     setCartSuccess('')
     try {
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const res = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,13 +146,7 @@ export default function FarmerLayout() {
         {/* Desktop Topbar */}
         <header className="hidden md:flex justify-between items-center px-6 py-4 bg-white shadow-sm border-b border-[#bfcaba] sticky top-0 z-30">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] text-[20px]">search</span>
-              <input
-                className="pl-10 pr-4 py-2 bg-[#f3f3f3] border border-[#bfcaba] rounded-full text-sm focus:outline-none focus:border-[#0d631b] w-64 h-[48px]"
-                placeholder={t('nav.search_placeholder')}
-              />
-            </div>
+            {/* Search removed */}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex bg-[#e2e2e2] rounded-full p-1 h-[40px] items-center">
@@ -166,6 +162,19 @@ export default function FarmerLayout() {
                 </button>
               ))}
             </div>
+            
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="h-[40px] px-5 rounded-full bg-[#0d631b] text-white flex flex-row items-center justify-center gap-2 font-bold text-sm hover:-translate-y-1 transition-all shadow-[0_4px_12px_rgba(13,99,27,0.3)] whitespace-nowrap"
+            >
+              <span className="material-symbols-outlined text-[20px] leading-none">shopping_cart</span>
+              <span className="leading-none">{t('marketplace.cart')}</span>
+              {cartCount > 0 && (
+                <span className="min-w-[20px] h-[20px] px-1 rounded-full bg-white text-[#0d631b] text-[10px] flex items-center justify-center font-black ml-1 leading-none">
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
           </div>
         </header>
@@ -258,12 +267,18 @@ export default function FarmerLayout() {
                   <span>{t('marketplace.total_bill') || 'Total'}</span>
                   <span className="text-[#0d631b]">₹{cartTotal}</span>
                 </div>
+                <div className="text-xs text-center text-[#40493d] mt-2 mb-1 flex items-center justify-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">local_shipping</span>
+                  Payment: Cash on Delivery (COD) Only
+                </div>
                 <div className="flex gap-3 mt-2">
-                  <button onClick={clearCart} className="flex-1 h-11 border border-[#ba1a1a] text-[#ba1a1a] rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#fff0f0] transition-colors">
-                    {t('marketplace.clear_cart') || 'Clear'}
+                  <button onClick={clearCart} className="flex-1 h-11 border border-[#ba1a1a] text-[#ba1a1a] rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#fff0f0] transition-colors flex items-center justify-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                    {t('marketplace.clear_cart') || 'Clear Cart'}
                   </button>
-                  <button onClick={handleCheckout} className="flex-1 h-11 bg-[#0d631b] text-white rounded-lg text-xs font-bold uppercase tracking-widest shadow-sm hover:opacity-90 transition-colors">
-                    {t('marketplace.checkout') || 'Checkout'}
+                  <button onClick={handleCheckout} className="flex-[2] h-11 bg-[#0d631b] text-white rounded-lg text-xs font-bold uppercase tracking-widest shadow-sm hover:opacity-90 transition-colors flex items-center justify-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                    Place Order (COD)
                   </button>
                 </div>
               </div>

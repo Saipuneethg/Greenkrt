@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import API_BASE from '../../config/api'
 import { useLanguage } from '../../context/LanguageContext'
 
 export default function FarmersManagement() {
@@ -9,7 +10,7 @@ export default function FarmersManagement() {
 
   const fetchFarmers = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/farmers', {
+      const res = await fetch(`${API_BASE}/api/admin/farmers`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import API_BASE from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../../context/LanguageContext'
@@ -14,8 +15,8 @@ export default function MyOrders() {
     const fetchAll = async () => {
       try {
         const [ordersRes, bookingsRes] = await Promise.all([
-          fetch('http://localhost:5000/api/orders', { headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') } }),
-          fetch('http://localhost:5000/api/services/bookings', { headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') } })
+          fetch(`${API_BASE}/api/orders`, { headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') } }),
+          fetch(`${API_BASE}/api/services/bookings`, { headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') } })
         ])
 
         let allItems = []
@@ -38,7 +39,18 @@ export default function MyOrders() {
     }
     
     fetchAll()
-    const interval = setInterval(fetchAll, 3000)
+    // Only poll if there might be active orders (not a completed/cancelled state)
+    // Use 20s interval instead of 3s to reduce server load
+    const interval = setInterval(() => {
+      // Check if there are any non-final orders before polling
+      setOrders(prev => {
+        const hasActiveOrders = prev.some(o => 
+          !['Delivered', 'Completed', 'Cancelled'].includes(o.status)
+        )
+        if (hasActiveOrders || prev.length === 0) fetchAll()
+        return prev
+      })
+    }, 20000)
     return () => clearInterval(interval)
   }, [])
 
@@ -67,7 +79,7 @@ export default function MyOrders() {
     if (!booking) return
 
     try {
-      const res = await fetch(`http://localhost:5000/api/services/bookings/${booking.bookingId}/cancel`, {
+      const res = await fetch(`${API_BASE}/api/services/bookings/${booking.bookingId}/cancel`, {
         method: 'PUT',
         headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
       })

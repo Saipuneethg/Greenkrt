@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
+import API_BASE from '../config/api'
 
 const DataContext = createContext()
 
@@ -19,7 +20,7 @@ export function DataProvider({ children }) {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/products', {
+      const res = await fetch(`${API_BASE}/api/products`, {
         headers: getHeaders(),
       })
       if (res.ok) {
@@ -33,7 +34,7 @@ export function DataProvider({ children }) {
 
   const fetchServices = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/services', {
+      const res = await fetch(`${API_BASE}/api/services`, {
         headers: getHeaders(),
       })
       if (res.ok) {
@@ -58,7 +59,7 @@ export function DataProvider({ children }) {
 
   const addProduct = async (productData) => {
     try {
-      const res = await fetch('http://localhost:5000/api/products', {
+      const res = await fetch(`${API_BASE}/api/products`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(productData),
@@ -75,7 +76,7 @@ export function DataProvider({ children }) {
 
   const updateProduct = async (id, productData) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+      const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(productData),
@@ -92,7 +93,7 @@ export function DataProvider({ children }) {
 
   const deleteProduct = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+      const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       })
@@ -107,7 +108,7 @@ export function DataProvider({ children }) {
 
   const addService = async (serviceData) => {
     try {
-      const res = await fetch('http://localhost:5000/api/services', {
+      const res = await fetch(`${API_BASE}/api/services`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(serviceData),
@@ -124,7 +125,7 @@ export function DataProvider({ children }) {
 
   const updateService = async (id, serviceData) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/services/${id}`, {
+      const res = await fetch(`${API_BASE}/api/services/${id}`, {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify(serviceData),
@@ -141,7 +142,7 @@ export function DataProvider({ children }) {
 
   const deleteService = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/services/${id}`, {
+      const res = await fetch(`${API_BASE}/api/services/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       })

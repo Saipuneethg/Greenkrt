@@ -10,9 +10,13 @@ export default function ProductsManagement() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [newProduct, setNewProduct] = useState({ name: '', category: 'Fertilizers', price: '', stock: '' })
   const [editingProduct, setEditingProduct] = useState(null)
+  const [deletingProduct, setDeletingProduct] = useState(null)
 
-  const handleRemove = async (id) => {
-    await deleteProduct(id)
+  const handleConfirmDelete = async () => {
+    if (deletingProduct) {
+      await deleteProduct(deletingProduct.id)
+      setDeletingProduct(null)
+    }
   }
 
   const handleSaveEdit = async (e) => {
@@ -76,7 +80,7 @@ export default function ProductsManagement() {
                 </td>
                 <td className="p-4 flex gap-3 items-center">
                   <button onClick={() => setEditingProduct(p)} className="text-[#006e2f] font-semibold text-xs hover:underline">Edit</button>
-                  <button onClick={() => handleRemove(p.id)} className="text-red-600 font-semibold text-xs hover:underline">Remove</button>
+                  <button onClick={() => setDeletingProduct(p)} className="text-red-600 font-semibold text-xs hover:underline">Remove</button>
                 </td>
               </tr>
             ))}
@@ -151,6 +155,25 @@ export default function ProductsManagement() {
                 Save Changes
               </button>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {deletingProduct && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
+            <div className="flex items-center gap-3 mb-4 text-red-600">
+              <span className="material-symbols-outlined text-3xl">warning</span>
+              <h2 className="text-lg font-bold text-[#1a1c1c]">Delete Product?</h2>
+            </div>
+            <p className="text-[#40493d] mb-6">
+              Are you sure you want to remove <strong>{deletingProduct.name}</strong> from the store? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeletingProduct(null)} className="flex-1 h-10 border border-[#bfcaba] text-[#40493d] font-bold rounded hover:bg-[#f9f9f9] transition-colors">Cancel</button>
+              <button onClick={handleConfirmDelete} className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white font-bold rounded transition-colors">Delete</button>
+            </div>
           </div>
         </div>,
         document.body

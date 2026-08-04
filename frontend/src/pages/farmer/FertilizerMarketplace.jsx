@@ -1,16 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { useData } from '../../context/DataContext'
 
 export default function FertilizerMarketplace() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [search, setSearch] = useState('')
   const { cart, addToCart, updateQuantity, cartCount, isCartOpen, setIsCartOpen } = useCart()
   const { t, language } = useLanguage()
   const { products } = useData()
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const q = params.get('q')
+    if (q) {
+      setSearch(q)
+    }
+  }, [location.search])
 
   // Track the selected category by index (0 for All, 1 for Fertilizers, etc.) to prevent translation mismatch
   const [categoryIndex, setCategoryIndex] = useState(0)
@@ -85,22 +94,7 @@ export default function FertilizerMarketplace() {
         <p className="text-[#40493d] text-sm">{t('marketplace.subtitle')}</p>
       </div>
 
-      {/* Fixed Cart Button (Portaled to body to escape transform container) */}
-      {!isCartOpen && createPortal(
-        <button
-          onClick={() => setIsCartOpen(true)}
-          className="fixed top-[88px] right-6 md:right-8 z-50 h-[48px] px-5 rounded-full bg-[#0d631b] text-white flex flex-row items-center justify-center gap-2 font-bold text-sm hover:-translate-y-1 transition-all shadow-[0_8px_24px_rgba(13,99,27,0.4)] whitespace-nowrap"
-        >
-          <span className="material-symbols-outlined text-[20px] leading-none">shopping_cart</span>
-          <span className="leading-none">{t('marketplace.cart')}</span>
-          {cartCount > 0 && (
-            <span className="min-w-[24px] h-[24px] px-1 rounded-full bg-white text-[#0d631b] text-xs flex items-center justify-center font-black ml-1 leading-none">
-              {cartCount}
-            </span>
-          )}
-        </button>,
-        document.body
-      )}
+
 
       {/* Search + Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -110,8 +104,16 @@ export default function FertilizerMarketplace() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={t('marketplace.search_placeholder')}
-            className="w-full h-[48px] pl-12 pr-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
+            className="w-full h-[48px] pl-12 pr-12 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#40493d] hover:text-[#1a1c1c] flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          )}
         </div>
         <div className="flex gap-2 flex-wrap">
           {categories.map((c, index) => (
@@ -130,9 +132,19 @@ export default function FertilizerMarketplace() {
           const cartItem = cart.find(item => item.id === p.id);
           const translatedName = t('products.' + p.id) !== 'products.' + p.id ? t('products.' + p.id) : p.name;
           
+          const getProductSymbol = (category) => {
+            switch (category) {
+              case 'Fertilizers': return '🌾';
+              case 'Pesticides': return '🛡️';
+              case 'Micronutrients': return '🧪';
+              case 'Seeds': return '🌱';
+              default: return '📦';
+            }
+          }
+          
           return (
             <div key={p.id} className="bg-white rounded-xl border border-[#bfcaba] shadow-sm overflow-hidden flex flex-col">
-              <div className="h-32 bg-[#f3f3f3] flex items-center justify-center text-5xl shrink-0">{p.image}</div>
+              <div className="h-32 bg-[#f3f3f3] flex items-center justify-center text-5xl shrink-0">{getProductSymbol(p.category)}</div>
               <div className="p-4 flex flex-col flex-1">
                 <div className="mb-3">
                   {p.badge && (

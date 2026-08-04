@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import API_BASE from '../../config/api'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import LocationInput from '../../components/LocationInput'
@@ -8,13 +9,14 @@ export default function FarmerDashboard() {
   const { t } = useLanguage()
   const [plots, setPlots] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [deletingPlot, setDeletingPlot] = useState(null)
   const [editingPlot, setEditingPlot] = useState(null)
   const [formData, setFormData] = useState({ name: '', location: '', crop: '', acres: '', soilType: '' })
   const [isLoaded, setIsLoaded] = useState(false)
 
   const fetchFarms = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/farms', {
+      const res = await fetch(`${API_BASE}/api/farms`, {
         headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
       })
       if (res.ok) {
@@ -43,15 +45,17 @@ export default function FarmerDashboard() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = async (id) => {
+  const confirmDelete = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/farms/${id}`, {
+      await fetch(`${API_BASE}/api/farms/${id}`, {
         method: 'DELETE',
         headers: { 'x-auth-token': sessionStorage.getItem('greenkrt_token') }
       })
       setPlots(plots.filter(p => p._id !== id))
     } catch (err) {
       console.error(err)
+    } finally {
+      setDeletingPlot(null)
     }
   }
 
@@ -59,7 +63,7 @@ export default function FarmerDashboard() {
     e.preventDefault()
     try {
       if (editingPlot) {
-        const res = await fetch(`http://localhost:5000/api/farms/${editingPlot._id}`, {
+        const res = await fetch(`${API_BASE}/api/farms/${editingPlot._id}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -72,7 +76,7 @@ export default function FarmerDashboard() {
           setPlots(plots.map(p => p._id === editingPlot._id ? updated : p))
         }
       } else {
-        const res = await fetch('http://localhost:5000/api/farms', {
+        const res = await fetch(`${API_BASE}/api/farms`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -126,7 +130,7 @@ export default function FarmerDashboard() {
                   <button onClick={() => handleOpenEdit(plot)} className="bg-[#f0f6ec] text-[#0d631b] px-3 py-1.5 rounded text-sm font-bold border border-[#cfe6c9] hover:bg-[#cfe6c9] transition-colors flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px]">edit</span> {t('my_farm.edit')}
                   </button>
-                  <button onClick={() => handleDelete(plot._id)} className="bg-[#fff0f0] text-[#ba1a1a] px-3 py-1.5 rounded text-sm font-bold border border-[#ffdad6] hover:bg-[#ffdad6] transition-colors flex items-center">
+                  <button onClick={() => setDeletingPlot(plot._id)} className="bg-[#fff0f0] text-[#ba1a1a] px-3 py-1.5 rounded text-sm font-bold border border-[#ffdad6] hover:bg-[#ffdad6] transition-colors flex items-center">
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 </div>
@@ -208,6 +212,30 @@ export default function FarmerDashboard() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingPlot && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col overflow-hidden">
+            <div className="bg-[#fff0f0] px-6 py-4 border-b border-[#ffdad6] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#ba1a1a]">warning</span>
+              <h3 className="font-bold text-[#ba1a1a]">{t('my_farm.delete_farm') || 'Delete Farm'}</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-[#40493d] mb-6">{t('my_farm.delete_confirm_msg') || 'Are you sure you want to delete this farm? This action cannot be undone.'}</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeletingPlot(null)} className="flex-1 h-10 border border-[#bfcaba] text-[#40493d] font-bold rounded-lg hover:bg-[#f3f3f3] transition-colors">
+                  {t('my_farm.cancel') || 'Cancel'}
+                </button>
+                <button onClick={() => confirmDelete(deletingPlot)} className="flex-1 h-10 bg-[#ba1a1a] text-white font-bold rounded-lg hover:bg-[#93000a] transition-colors shadow-sm">
+                  {t('my_farm.delete') || 'Delete'}
+                </button>
+              </div>
             </div>
           </div>
         </div>,

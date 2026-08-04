@@ -5,12 +5,12 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import API_BASE from '../config/api'
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
   const { language, setLanguage, t } = useLanguage()
   const [showPass, setShowPass] = useState(false)
-  const role = 'farmer' // Hardcoded for this page
+  const role = 'admin' // Hardcoded for this page
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -18,30 +18,8 @@ export default function LoginPage() {
   const [shouldSignUp, setShouldSignUp] = useState(false)
 
   const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setLoading(true)
-        setError('')
-        const res = await fetch(`${API_BASE}/api/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: tokenResponse.access_token, role }),
-        })
-        const data = await res.json()
-        if (!res.ok) {
-          setError(data.message || 'Google Login failed.')
-        } else {
-          sessionStorage.setItem('greenkrt_token', data.token)
-          login(data.user, data.token)
-          navigate(data.user.role === 'admin' ? '/admin' : '/dashboard')
-        }
-      } catch (err) {
-        setError('Unable to connect to server. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    },
-    onError: () => setError('Google Login Failed'),
+    onSuccess: async () => {},
+    onError: () => setError('Google Login Disabled for Admin'),
   })
 
   const handleSubmit = async (e) => {
@@ -121,8 +99,14 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-md">
-          <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">{t('auth.login_title')}</h1>
-          <p className="text-[#40493d] mb-6">{t('auth.login_subtitle')}</p>
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-700 text-center rounded-lg flex flex-col items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-blue-500 text-4xl">admin_panel_settings</span>
+            <strong className="text-xl">Admin Portal</strong>
+            <p className="text-sm">Authorized Personnel Only</p>
+          </div>
+          
+          <h1 className="text-3xl font-bold text-[#1a1c1c] mb-2">Admin Login</h1>
+          <p className="text-[#40493d] mb-6">Enter your credentials to access the admin dashboard.</p>
 
 
 
@@ -188,25 +172,17 @@ export default function LoginPage() {
             >
               {loading ? <><span className="material-symbols-outlined animate-spin text-lg">progress_activity</span> Signing in…</> : t('auth.login_btn')}
             </button>
-            <div className="relative flex items-center gap-4">
-              <div className="flex-1 h-px bg-[#bfcaba]"></div>
-              <span className="text-xs text-[#40493d]">OR CONTINUE WITH</span>
-              <div className="flex-1 h-px bg-[#bfcaba]"></div>
-            </div>
-            <button type="button" onClick={() => googleLogin()} className="w-full h-[52px] border border-[#bfcaba] rounded-lg flex items-center justify-center gap-3 text-sm font-semibold text-[#1a1c1c] hover:bg-[#f3f3f3] transition-colors bg-white">
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              Continue with Google
-            </button>
+
           </form>
 
           <p className="text-center mt-8 text-sm text-[#40493d]">
-            {t('auth.no_account')}{' '}
-            <Link to="/signup" className="text-[#0d631b] font-semibold hover:underline">{t('auth.create_one')}</Link>
+            Don't have an admin account?{' '}
+            <Link to="/admin-signup" className="text-blue-600 font-semibold hover:underline">Create one</Link>
           </p>
 
           <div className="mt-12 text-center">
-            <Link to="/admin-login" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-              Admin Access
+            <Link to="/login" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              Return to Farmer Login
             </Link>
           </div>
         </div>

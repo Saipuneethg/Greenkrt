@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import API_BASE from '../config/api'
 
 const CartContext = createContext();
 
@@ -17,7 +18,7 @@ export const CartProvider = ({ children }) => {
         return;
       }
       try {
-        const res = await fetch('http://localhost:5000/api/cart', {
+        const res = await fetch(`${API_BASE}/api/cart`, {
           headers: { 'x-auth-token': token }
         });
         if (res.ok) {
@@ -40,7 +41,7 @@ export const CartProvider = ({ children }) => {
 
     const syncTimer = setTimeout(async () => {
       try {
-        await fetch('http://localhost:5000/api/cart/sync', {
+        await fetch(`${API_BASE}/api/cart/sync`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

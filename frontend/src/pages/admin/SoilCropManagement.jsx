@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_BASE from '../../config/api'
 import { createPortal } from 'react-dom'
 
 export default function SoilCropManagement() {
@@ -32,7 +33,7 @@ export default function SoilCropManagement() {
 
   const fetchRequests = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/soil-tests', {
+      const res = await fetch(`${API_BASE}/api/soil-tests`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -57,7 +58,7 @@ export default function SoilCropManagement() {
     if (!selectedReq) return
 
     try {
-      const res = await fetch(`http://localhost:5000/api/soil-tests/${selectedReq.requestId}`, {
+      const res = await fetch(`${API_BASE}/api/soil-tests/${selectedReq.requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ export default function SoilCropManagement() {
       onConfirm: async () => {
         setConfirmConfig({ show: false, message: '', onConfirm: null })
         try {
-          const res = await fetch(`http://localhost:5000/api/soil-tests/${requestId}`, {
+          const res = await fetch(`${API_BASE}/api/soil-tests/${requestId}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -122,7 +123,7 @@ export default function SoilCropManagement() {
       onConfirm: async () => {
         setConfirmConfig({ show: false, message: '', onConfirm: null })
         try {
-          const res = await fetch('http://localhost:5000/api/soil-tests/clear-all', {
+          const res = await fetch(`${API_BASE}/api/soil-tests/clear-all`, {
             method: 'POST',
             headers: {
               'x-auth-token': sessionStorage.getItem('greenkrt_token'),

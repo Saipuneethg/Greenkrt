@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_BASE from '../../config/api'
 
 export default function DeliveryPartnerManagement() {
   const [partners, setPartners] = useState([])
@@ -25,7 +26,7 @@ export default function DeliveryPartnerManagement() {
 
   const fetchPartners = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/delivery-partners', {
+      const res = await fetch(`${API_BASE}/api/admin/delivery-partners`, {
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),
         },
@@ -70,8 +71,8 @@ export default function DeliveryPartnerManagement() {
     setSubmitting(true)
     try {
       const url = editId 
-        ? `http://localhost:5000/api/admin/delivery-partners/${editId}`
-        : 'http://localhost:5000/api/admin/delivery-partners'
+        ? `${API_BASE}/api/admin/delivery-partners/${editId}`
+        : `${API_BASE}/api/admin/delivery-partners`
       const method = editId ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -113,7 +114,7 @@ export default function DeliveryPartnerManagement() {
     const partnerId = confirmDeleteId
     setConfirmDeleteId(null)
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/delivery-partners/${partnerId}`, {
+      const res = await fetch(`${API_BASE}/api/admin/delivery-partners/${partnerId}`, {
         method: 'DELETE',
         headers: {
           'x-auth-token': sessionStorage.getItem('greenkrt_token'),

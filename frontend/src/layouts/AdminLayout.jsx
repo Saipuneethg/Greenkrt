@@ -76,6 +76,19 @@ export default function AdminLayout() {
         </div>
 
         <div className="mt-4 px-2">
+          <div className="flex bg-[#222424] rounded-full p-1 h-[36px] items-center mb-4 mx-2">
+            {LANGUAGES.map(({ code, label }) => (
+              <button
+                key={code}
+                onClick={() => setLanguage(code)}
+                className={`flex-1 flex justify-center items-center h-full rounded-full text-xs font-semibold transition-colors uppercase ${
+                  language === code ? 'bg-[#006e2f] text-white' : 'text-[#9ca3af] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <NavLink
             to="/admin/settings"
             className={({ isActive }) =>
@@ -97,29 +110,6 @@ export default function AdminLayout() {
 
       {/* Main Canvas */}
       <div className="flex-1 flex flex-col ml-[260px] min-h-screen">
-        <header className="bg-[#f3fcef] flex justify-between items-center h-16 w-full px-6 border-b border-[#bccbb9] z-10 sticky top-0">
-          <div className="font-semibold text-lg text-[#006e2f]">{t('admin_nav.title')}</div>
-          <div className="flex items-center gap-3">
-            <div className="flex bg-[#e2e2e2] rounded-full p-1 h-[32px] items-center mr-4">
-              {LANGUAGES.map(({ code, label }) => (
-                <button
-                  key={code}
-                  onClick={() => setLanguage(code)}
-                  className={`px-3 py-0.5 rounded-full text-xs font-semibold transition-colors uppercase ${
-                    language === code ? 'bg-[#006e2f] text-white' : 'text-[#40493d] hover:text-[#0d631b]'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <button className="p-2 rounded-full hover:bg-[#e8f0e4] transition-colors relative">
-              <span className="material-symbols-outlined text-[#3d4a3d]">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
-            </button>
-          </div>
-        </header>
-
         <main className="flex-1 p-6 overflow-y-auto page-enter">
           <Outlet />
         </main>
