@@ -3,9 +3,11 @@ import API_BASE from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { useLanguage } from '../../context/LanguageContext'
+import { useData } from '../../context/DataContext'
 
 export default function MyOrders() {
   const { t, language } = useLanguage()
+  const { services } = useData()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [cancelModal, setCancelModal] = useState({ isOpen: false, booking: null, error: '' })
@@ -194,9 +196,17 @@ export default function MyOrders() {
             const { color, icon } = getStatusStyle(o.status)
             
             if (o.itemType === 'service') {
-              let serviceName = t('my_orders.drone_service')
-              if (o.serviceType === 'land') serviceName = t('my_orders.land_service')
-              if (o.serviceType === 'soil') serviceName = 'Soil Test Collection'
+              let serviceName = 'Service'
+              if (o.serviceType === 'drone') {
+                const s = services.find(x => x.name.toLowerCase().includes('drone'))
+                serviceName = s ? s.name : 'Drone Spraying Service'
+              } else if (o.serviceType === 'land') {
+                const s = services.find(x => x.name.toLowerCase().includes('land'))
+                serviceName = s ? s.name : 'Land Measurement'
+              } else if (o.serviceType === 'soil') {
+                const s = services.find(x => x.name.toLowerCase().includes('soil'))
+                serviceName = s ? s.name : 'Soil Test & AI Analysis'
+              }
               
               const translateCrop = (crop) => {
                 if (!crop) return ''
