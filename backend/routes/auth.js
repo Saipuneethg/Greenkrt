@@ -23,9 +23,10 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Please fill all required fields.' });
   }
 
-  // Normalize phone (strip spaces and ensure +91 prefix)
-  const cleanPhone = phone.replace(/\s+/g, '');
-  const finalPhone = cleanPhone.startsWith('+91') ? cleanPhone : `+91${cleanPhone}`;
+  // Normalize phone (strip spaces and remove +91 prefix)
+  let cleanPhone = phone.replace(/\s+/g, '');
+  if (cleanPhone.startsWith('+91')) cleanPhone = cleanPhone.substring(3);
+  const finalPhone = cleanPhone;
 
   const userRole = role || 'farmer';
   if (userRole === 'farmer' && !village) {
@@ -95,14 +96,12 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const cleanIdentifier = identifier.replace(/\s+/g, '');
-    const phoneWithPrefix = cleanIdentifier.startsWith('+91') ? cleanIdentifier : `+91${cleanIdentifier}`;
+    let cleanIdentifier = identifier.replace(/\s+/g, '');
+    if (cleanIdentifier.startsWith('+91')) cleanIdentifier = cleanIdentifier.substring(3);
 
     const user = await User.findOne({
       $or: [
         { email: identifier }, 
-        { phone: identifier },
-        { phone: phoneWithPrefix },
         { phone: cleanIdentifier }
       ],
     });
