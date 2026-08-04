@@ -13,8 +13,29 @@ const admin = require('../middleware/admin');
 // @access  Private
 router.get('/', auth, async (req, res) => {
   try {
-    const services = await Service.find({});
-    res.json(services);
+    const services = await Service.find({}).lean();
+    
+    // Dynamically calculate actual active bookings for each service
+    const enhancedServices = await Promise.all(services.map(async (service) => {
+      const sNameLower = service.name.toLowerCase();
+      let sType = 'unknown';
+      if (sNameLower.includes('drone')) sType = 'drone';
+      else if (sNameLower.includes('land')) sType = 'land';
+      else if (sNameLower.includes('soil')) sType = 'soil';
+
+      if (sType !== 'unknown') {
+        const count = await Booking.countDocuments({
+          serviceType: sType,
+          status: { $nin: ['Completed', 'Cancelled'] }
+        });
+        service.activeBookings = count;
+      } else {
+        service.activeBookings = 0;
+      }
+      return service;
+    }));
+
+    res.json(enhancedServices);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
