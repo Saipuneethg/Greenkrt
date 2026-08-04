@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [shouldSignUp, setShouldSignUp] = useState(false)
+  const [terms, setTerms] = useState(false)
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -47,6 +48,12 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (!terms) {
+      setError('Please accept the Terms of Service to continue.')
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/api/auth/login`, {
@@ -180,6 +187,17 @@ export default function LoginPage() {
             </div>
             <div className="flex justify-end">
               <a href="#" className="text-sm text-[#0d631b] font-semibold hover:underline">Forgot Password?</a>
+            </div>
+
+            <div className="flex items-start gap-3 mt-4">
+              <input
+                type="checkbox"
+                checked={terms} onChange={e => setTerms(e.target.checked)}
+                className="mt-1 accent-[#0d631b]"
+              />
+              <span className="text-sm text-[#40493d]">
+                I agree to the <a href="#" className="text-[#0d631b] font-semibold hover:underline">Terms of Service</a> and <a href="#" className="text-[#0d631b] font-semibold hover:underline">Privacy Policy</a>
+              </span>
             </div>
             <button
               type="submit"
