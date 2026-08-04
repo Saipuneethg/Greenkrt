@@ -3,9 +3,11 @@ import API_BASE from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import LocationInput from '../../components/LocationInput'
+import { useData } from '../../context/DataContext'
 
 export default function BookLandMeasurement() {
   const { t } = useLanguage()
+  const { services } = useData()
   const navigate = useNavigate()
   const [purpose, setPurpose] = useState('Boundary Dispute / Legal')
   const [estimatedSize, setEstimatedSize] = useState('')
@@ -32,7 +34,12 @@ export default function BookLandMeasurement() {
   }, [])
 
   const size = parseFloat(estimatedSize) || 0
-  const totalCost = size * 500
+  
+  const landService = services.find(s => s.name === 'Land Measurement' || s.title === 'Land Measurement')
+  const defaultPrice = 500
+  const basePriceValue = landService && landService.basePrice ? parseInt(landService.basePrice.replace(/\D/g, '')) || defaultPrice : defaultPrice
+  
+  const totalCost = size * basePriceValue
 
   const handleSubmit = async (e) => {
     e.preventDefault()

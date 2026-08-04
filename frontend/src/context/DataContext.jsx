@@ -48,12 +48,23 @@ export function DataProvider({ children }) {
 
   // Load data when user is authenticated
   useEffect(() => {
+    let intervalId;
     if (user) {
       fetchProducts()
       fetchServices()
+
+      // Set up background polling every 30 seconds for real-time admin sync
+      intervalId = setInterval(() => {
+        fetchProducts()
+        fetchServices()
+      }, 30000)
     } else {
       setProducts([])
       setServices([])
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
     }
   }, [user])
 

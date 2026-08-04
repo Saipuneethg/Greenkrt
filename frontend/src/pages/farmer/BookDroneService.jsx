@@ -3,9 +3,11 @@ import API_BASE from '../../config/api'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import LocationInput from '../../components/LocationInput'
+import { useData } from '../../context/DataContext'
 
 export default function BookDroneService() {
   const { t } = useLanguage()
+  const { services } = useData()
   const navigate = useNavigate()
   
   const [cropType, setCropType] = useState('')
@@ -35,9 +37,14 @@ export default function BookDroneService() {
     }
   }, [])
 
-  // Calculate pricing
+  // Calculate pricing dynamically from Admin data
   const acres = parseFloat(farmSize) || 0
-  const serviceCost = acres * 800
+  
+  const droneService = services.find(s => s.name === 'Drone Spraying Service' || s.title === 'Drone Spraying Service')
+  const defaultPrice = 800
+  const basePriceValue = droneService && droneService.basePrice ? parseInt(droneService.basePrice.replace(/\D/g, '')) || defaultPrice : defaultPrice
+  
+  const serviceCost = acres * basePriceValue
   const travelCharge = serviceCost > 0 ? 200 : 0
   const gst = Math.round((serviceCost + travelCharge) * 0.18)
   const totalCost = serviceCost + travelCharge + gst

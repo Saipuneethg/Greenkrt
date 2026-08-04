@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import API_BASE from '../../config/api'
 import { useLanguage } from '../../context/LanguageContext'
 import { useCart } from '../../context/CartContext'
+import { useData } from '../../context/DataContext'
 
 export default function SoilTestAI() {
   const { t } = useLanguage()
+  const { services } = useData()
   const { addToCart, cartCount, toggleCart } = useCart()
   const [requests, setRequests] = useState([])
   const [prevCrop, setPrevCrop] = useState('')
@@ -48,7 +50,12 @@ export default function SoilTestAI() {
     setBookingLoading(true)
 
     const acres = parseFloat(farmSize) || 0
-    const serviceCost = acres > 0 ? acres * 350 : 350 // Default 1 sample
+    
+    const soilService = services.find(s => s.name === 'Soil Test & AI Analysis' || s.title === 'Soil Test & AI Analysis')
+    const defaultPrice = 350
+    const basePriceValue = soilService && soilService.basePrice ? parseInt(soilService.basePrice.replace(/\D/g, '')) || defaultPrice : defaultPrice
+
+    const serviceCost = acres > 0 ? acres * basePriceValue : basePriceValue // Default 1 sample
     const travelCharge = 200
     const gst = Math.round((serviceCost + travelCharge) * 0.18)
     const totalCost = serviceCost + travelCharge + gst
@@ -469,22 +476,38 @@ export default function SoilTestAI() {
                 </div>
 
                 <div className="bg-[#f9f9f9] border border-[#bfcaba] rounded-xl p-4 mt-4">
-                  <div className="flex justify-between text-sm mb-2 text-[#40493d]">
-                    <span>Collection Fee ({farmSize || 1} Acres)</span>
-                    <span>₹{((parseFloat(farmSize) || 1) * 350)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm mb-2 text-[#40493d]">
-                    <span>Travel Charge</span>
-                    <span>₹200</span>
-                  </div>
-                  <div className="flex justify-between text-sm mb-3 text-[#40493d]">
-                    <span>GST (18%)</span>
-                    <span>₹{Math.round((((parseFloat(farmSize) || 1) * 350) + 200) * 0.18)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg text-[#0d631b] pt-3 border-t border-[#bfcaba]">
-                    <span>Total Cost</span>
-                    <span>₹{(((parseFloat(farmSize) || 1) * 350) + 200) + Math.round((((parseFloat(farmSize) || 1) * 350) + 200) * 0.18)}</span>
-                  </div>
+                  {(() => {
+                    const soilService = services.find(s => s.name === 'Soil Test & AI Analysis' || s.title === 'Soil Test & AI Analysis')
+                    const defaultPrice = 350
+                    const basePriceValue = soilService && soilService.basePrice ? parseInt(soilService.basePrice.replace(/\D/g, '')) || defaultPrice : defaultPrice
+                    
+                    const pSize = parseFloat(farmSize) || 1
+                    const pCost = pSize * basePriceValue
+                    const pTravel = 200
+                    const pGst = Math.round((pCost + pTravel) * 0.18)
+                    const pTotal = pCost + pTravel + pGst
+                    
+                    return (
+                      <>
+                        <div className="flex justify-between text-sm mb-2 text-[#40493d]">
+                          <span>Collection Fee ({pSize} Acres)</span>
+                          <span>₹{pCost}</span>
+                        </div>
+                        <div className="flex justify-between text-sm mb-2 text-[#40493d]">
+                          <span>Travel Charge</span>
+                          <span>₹{pTravel}</span>
+                        </div>
+                        <div className="flex justify-between text-sm mb-3 text-[#40493d]">
+                          <span>GST (18%)</span>
+                          <span>₹{pGst}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-lg text-[#0d631b] pt-3 border-t border-[#bfcaba]">
+                          <span>Total Cost</span>
+                          <span>₹{pTotal}</span>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
 
                 <div className="mt-6">
