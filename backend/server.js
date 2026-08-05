@@ -28,14 +28,15 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
-    
-    return callback(new Error('CORS Policy Error: Origin not allowed'));
+    // In production, restrict to frontend domain
+    if (process.env.NODE_ENV === 'production' && !origin.includes('greenkrt')) {
+      return callback(new Error('CORS Policy Error: Origin not allowed'));
+    }
+    return callback(null, true);
   },
   credentials: true
 }));
