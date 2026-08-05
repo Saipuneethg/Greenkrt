@@ -20,26 +20,7 @@ const seedDB = require('./seed');
 const app = express();
 
 // Middleware
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5000',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-    // In production, restrict to frontend domain
-    if (process.env.NODE_ENV === 'production' && !origin.includes('greenkrt')) {
-      return callback(new Error('CORS Policy Error: Origin not allowed'));
-    }
-    return callback(null, true);
-  },
-  credentials: true
-}));
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // Request Logger (Incoming)
