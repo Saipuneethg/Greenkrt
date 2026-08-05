@@ -131,13 +131,42 @@ export default function FarmerLayout() {
       </nav>
 
       {/* Top Bar (Mobile) */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-white shadow-sm fixed top-0 w-full z-40">
-        <div className="flex items-center gap-2">
+      <div className="md:hidden flex justify-between items-center p-3 bg-white shadow-sm fixed top-0 w-full z-40 border-b border-[#bfcaba]">
+        <div className="flex items-center gap-2 shrink-0">
           <img src="/logo.jpeg" alt="GreenKrt Logo" className="w-6 h-6 rounded-full object-cover" />
-          <span className="text-[#0d631b] font-bold text-lg">GreenKrt</span>
+          <span className="text-[#0d631b] font-bold text-lg hidden sm:inline">GreenKrt</span>
         </div>
-        <div className="flex gap-2 items-center">
-          <div className="w-10 h-10 rounded-full bg-[#2e7d32] flex items-center justify-center text-white font-bold">{user?.firstName?.[0] || 'U'}</div>
+        
+        <div className="flex items-center gap-2">
+          <div className="flex bg-[#e2e2e2] rounded-full p-1 h-[32px] items-center">
+            {LANGUAGES.map(({ code, label }) => (
+              <button
+                key={code}
+                onClick={() => setLanguage(code)}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
+                  language === code ? 'bg-[#0d631b] text-white' : 'text-[#40493d] hover:text-[#0d631b]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative h-[32px] w-[32px] rounded-full bg-[#0d631b] text-white flex items-center justify-center shadow-md"
+          >
+            <span className="material-symbols-outlined text-[18px]">shopping_cart</span>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
+                {cartCount}
+              </span>
+            )}
+          </button>
+          
+          <div className="w-8 h-8 rounded-full bg-[#2e7d32] flex items-center justify-center text-white font-bold text-sm ml-1 shrink-0">
+            {user?.firstName?.[0] || 'U'}
+          </div>
         </div>
       </div>
 
