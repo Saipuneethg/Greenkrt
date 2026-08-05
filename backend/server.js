@@ -20,7 +20,25 @@ const seedDB = require('./seed');
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('CORS Policy Error: Origin not allowed'));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Request Logger (Incoming)
