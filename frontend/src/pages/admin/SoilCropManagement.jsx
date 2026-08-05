@@ -88,6 +88,26 @@ export default function SoilCropManagement() {
     }
   }
 
+  const updateRequestStatus = async (requestId, newStatus) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/soil-tests/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': sessionStorage.getItem('greenkrt_token'),
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        setRequests(prev => prev.map(req => req.requestId === requestId ? { ...req, status: newStatus } : req))
+      } else {
+        showMessage('Failed to update status.', true)
+      }
+    } catch {
+      showMessage('Error connecting to server.', true)
+    }
+  }
+
   const handleReject = async (requestId) => {
     setConfirmConfig({
       show: true,
@@ -181,9 +201,16 @@ export default function SoilCropManagement() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded font-bold ${req.status === 'Completed' ? 'bg-green-100 text-green-800' : (req.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')}`}>
-                      {req.status}
-                    </span>
+                    <select
+                      value={req.status}
+                      onChange={(e) => updateRequestStatus(req.requestId, e.target.value)}
+                      className={`text-xs px-2 py-1 rounded font-bold outline-none border-none cursor-pointer ${req.status === 'Completed' ? 'bg-green-100 text-green-800' : (req.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')}`}
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
                     {req.status !== 'Completed' && req.status !== 'Rejected' && (
                       <div className="flex gap-2">
                         <button 
