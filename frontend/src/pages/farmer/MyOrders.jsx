@@ -124,7 +124,7 @@ export default function MyOrders() {
   const processingCount = orders.filter(o => o.status === 'Processing' || o.status === 'Pending').length
 
   const TrackingSteps = ({ status, type }) => {
-    const steps = type === 'service' ? ['Pending', 'Scheduled', 'Completed'] : ['Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
+    const steps = type === 'service' ? ['Pending', 'Scheduled', 'In Progress', 'Completed'] : ['Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
     const currentIndex = steps.indexOf(status);
 
     return (

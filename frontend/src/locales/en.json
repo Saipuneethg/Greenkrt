@@ -398,6 +398,29 @@
       "view_details": "View Details"
     }
   },
+  "my_orders": {
+    "title": "My Orders & Bookings",
+    "subtitle": "Track your agricultural product orders and service bookings.",
+    "total_orders": "Total Orders",
+    "processing": "Processing",
+    "in_transit": "In Transit",
+    "delivered": "Completed",
+    "loading": "Loading your orders...",
+    "no_orders": "You haven't placed any orders or bookings yet.",
+    "placed": "Placed on:",
+    "booked": "Booked on:",
+    "cancel_booking": "Cancel",
+    "cancel_confirm": "Are you sure you want to cancel this booking?",
+    "cancel_btn": "Yes, Cancel",
+    "keep_btn": "No, Keep it",
+    "pending": "Pending",
+    "scheduled": "Scheduled",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "shipped": "Shipped",
+    "out_for_delivery": "Out for Delivery"
+  },
   "admin_nav": {
     "dashboard": "Dashboard",
     "farmers": "Farmers",
