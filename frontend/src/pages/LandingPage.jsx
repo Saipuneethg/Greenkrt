@@ -154,7 +154,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-
+      {/* Technology Partner Section */}
+      <section className="py-8 bg-white border-b border-[#bfcaba]">
+        <div className="max-w-7xl mx-auto px-4 md:px-16 flex flex-col items-center justify-center text-center">
+          <p className="text-sm font-bold text-[#707a6c] uppercase tracking-wider mb-4">Technology Partner</p>
+          <div className="flex flex-col md:flex-row items-center gap-4 opacity-90 hover:opacity-100 transition-opacity p-4 rounded-xl border border-[#bfcaba]/30 bg-[#f9f9f9]">
+            <img src="/cdt-logo.png" alt="CDT SRM University-AP" className="h-16 object-contain hidden md:block" onError={(e) => e.target.style.display='none'} />
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-4xl text-[#0d631b] md:hidden">flight_takeoff</span>
+              <div className="text-center md:text-left">
+                <h3 className="font-extrabold text-[#1a1c1c] text-xl md:text-2xl">Centre for Drone Technology (CDT)</h3>
+                <p className="text-[#40493d] font-medium text-lg">SRM University-AP</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Problem/Solution */}
       <section className="py-24 px-4 md:px-16 w-full max-w-7xl mx-auto">
