@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -6,12 +7,14 @@ export default function LandingPage() {
   const { language, setLanguage, t } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [pendingRoute, setPendingRoute] = useState(null)
 
   const handleProtectedLink = (e, path) => {
     e.preventDefault();
     if (!user) {
-      alert("Please login to access this feature.");
-      navigate('/login');
+      setPendingRoute(path);
+      setShowLoginPrompt(true);
     } else {
       navigate(path);
     }
@@ -296,6 +299,23 @@ export default function LandingPage() {
       <footer className="bg-[#051106] py-8 text-center border-t border-white/10">
         <p className="text-white/40 text-sm">{t('landing.footer_rights')}</p>
       </footer>
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-sm w-full shadow-2xl relative">
+            <div className="w-16 h-16 bg-[#0d631b]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-outlined text-[#0d631b] text-3xl">lock</span>
+            </div>
+            <h3 className="text-xl font-bold text-center text-[#1a1c1c] mb-2">Login Required</h3>
+            <p className="text-center text-[#40493d] text-sm mb-6">Please sign in to your account to access this feature.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => navigate('/login')} className="w-full h-[48px] rounded-lg bg-[#0d631b] text-white font-bold hover:bg-[#0a4a14] transition-colors">Go to Login</button>
+              <button onClick={() => setShowLoginPrompt(false)} className="w-full h-[48px] rounded-lg border border-[#bfcaba] text-[#40493d] font-bold hover:bg-[#f3f3f3] transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
