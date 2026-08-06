@@ -1,8 +1,21 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 
 export default function LandingPage() {
   const { language, setLanguage, t } = useLanguage()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const handleProtectedLink = (e, path) => {
+    e.preventDefault();
+    if (!user) {
+      alert("Please login to access this feature.");
+      navigate('/login');
+    } else {
+      navigate(path);
+    }
+  }
   
   const LANGUAGES = [
     { code: 'en', label: 'EN' },
@@ -103,21 +116,21 @@ export default function LandingPage() {
               {t('landing.hero_desc')}
             </p>
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-16">
-              <Link to="/dashboard/book-drone">
+              <a href="/dashboard/book-drone" onClick={(e) => handleProtectedLink(e, '/dashboard/book-drone')}>
                 <button className="px-8 min-h-[56px] rounded-lg bg-[#00C853] text-white font-bold text-sm uppercase tracking-wider hover:opacity-90 shadow-[0_8px_16px_rgba(0,200,83,0.25)] transition-all flex items-center gap-2">
                   <span className="material-symbols-outlined">flight</span> {t('landing.btn_drone')}
                 </button>
-              </Link>
-              <Link to="/dashboard/soil-test">
+              </a>
+              <a href="/dashboard/soil-test" onClick={(e) => handleProtectedLink(e, '/dashboard/soil-test')}>
                 <button className="px-8 min-h-[56px] rounded-lg bg-white/10 border border-white/20 text-white font-bold text-sm uppercase tracking-wider hover:bg-white/20 backdrop-blur-md transition-all flex items-center gap-2">
                   <span className="material-symbols-outlined">science</span> {t('landing.btn_soil')}
                 </button>
-              </Link>
-              <Link to="/dashboard/marketplace">
+              </a>
+              <a href="/dashboard/marketplace" onClick={(e) => handleProtectedLink(e, '/dashboard/marketplace')}>
                 <button className="px-8 min-h-[56px] rounded-lg bg-white/10 border border-white/20 text-white font-bold text-sm uppercase tracking-wider hover:bg-white/20 backdrop-blur-md transition-all flex items-center gap-2">
                   <span className="material-symbols-outlined">storefront</span> {t('landing.btn_shop')}
                 </button>
-              </Link>
+              </a>
             </div>
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-white/10 pt-8">
@@ -226,9 +239,9 @@ export default function LandingPage() {
                 </div>
                 <h3 className="font-bold text-lg text-[#1a1c1c] mb-2">{service.title}</h3>
                 <p className="text-[#40493d] text-sm leading-relaxed mb-4">{service.desc}</p>
-                <Link to={service.link} className="text-[#0d631b] font-semibold text-sm hover:underline flex items-center gap-1">
+                <a href={service.link} onClick={(e) => handleProtectedLink(e, service.link)} className="text-[#0d631b] font-semibold text-sm hover:underline flex items-center gap-1">
                   {t('landing.book_now')} <span className="material-symbols-outlined text-base">arrow_forward</span>
-                </Link>
+                </a>
               </div>
             ))}
           </div>
