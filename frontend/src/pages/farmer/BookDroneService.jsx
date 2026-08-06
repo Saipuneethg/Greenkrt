@@ -132,7 +132,7 @@ export default function BookDroneService() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#1a1c1c] mb-2">{t('book_drone.farm_size')}</label>
-                <input value={farmSize} onChange={e => setFormSize(e.target.value)} type="number" step="0.1" className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white" />
+                <input value={farmSize} onChange={e => setFarmSize(e.target.value)} type="number" step="0.1" className="w-full h-[48px] px-4 border border-[#bfcaba] rounded-lg text-sm focus:outline-none focus:border-[#0d631b] bg-white" />
               </div>
             </div>
             
