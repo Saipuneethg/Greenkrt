@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import API_BASE from '../../config/api'
+import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../../context/LanguageContext'
 import { useCart } from '../../context/CartContext'
 import { useData } from '../../context/DataContext'
 
 export default function SoilTestAI() {
+  const navigate = useNavigate()
   const { t } = useLanguage()
   const { services } = useData()
   const { addToCart, cartCount, toggleCart } = useCart()
@@ -81,6 +83,7 @@ export default function SoilTestAI() {
           setBookingSuccess(false)
           setDate('')
           setFarmLocation('')
+          navigate('/dashboard/services')
         }, 3000)
       } else {
         const errData = await res.json()

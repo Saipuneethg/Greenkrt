@@ -72,7 +72,7 @@ export default function BookLandMeasurement() {
       if (res.ok) {
         setSuccess(true)
         setTimeout(() => {
-          navigate('/dashboard')
+          navigate('/dashboard/services')
         }, 2000)
       } else {
         setError(t('book_land.booking_failed'))

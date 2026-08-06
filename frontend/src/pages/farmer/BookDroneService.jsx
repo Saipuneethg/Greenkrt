@@ -82,7 +82,7 @@ export default function BookDroneService() {
       if (res.ok) {
         setSuccess(true)
         setTimeout(() => {
-          navigate('/dashboard')
+          navigate('/dashboard/services')
         }, 2000)
       } else {
         setError(t('book_drone.booking_failed'))
