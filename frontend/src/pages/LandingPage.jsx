@@ -57,13 +57,13 @@ export default function LandingPage() {
         </div>
         <div className="hidden lg:flex items-center gap-8">
           {[
-            { key: 'landing.services', text: 'Services' },
-            { key: 'landing.soil', text: 'Soil Analysis' },
-            { key: 'landing.shop', text: 'Shop' },
-            { key: 'landing.crops', text: 'Crops' },
-            { key: 'landing.about', text: 'About' }
+            { key: 'landing.services', path: '/dashboard/services' },
+            { key: 'landing.soil', path: '/dashboard/soil-test' },
+            { key: 'landing.shop', path: '/dashboard/marketplace' },
+            { key: 'landing.crops', path: '/dashboard' },
+            { key: 'landing.about', path: '/dashboard' }
           ].map(item => (
-            <a key={item.key} className="text-[#40493d] font-medium hover:text-[#0d631b] transition-colors text-sm relative after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-0 after:h-0.5 after:bg-[#0d631b] after:transition-all hover:after:w-full" href="#">{t(item.key)}</a>
+            <a key={item.key} onClick={(e) => handleProtectedLink(e, item.path)} className="cursor-pointer text-[#40493d] font-medium hover:text-[#0d631b] transition-colors text-sm relative after:content-[''] after:absolute after:-bottom-2 after:left-0 after:w-0 after:h-0.5 after:bg-[#0d631b] after:transition-all hover:after:w-full">{t(item.key)}</a>
           ))}
         </div>
         <div className="hidden lg:flex items-center gap-4">
