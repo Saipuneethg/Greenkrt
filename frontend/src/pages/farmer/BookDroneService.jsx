@@ -46,8 +46,7 @@ export default function BookDroneService() {
   
   const serviceCost = acres * basePriceValue
   const travelCharge = serviceCost > 0 ? 200 : 0
-  const gst = Math.round((serviceCost + travelCharge) * 0.18)
-  const totalCost = serviceCost + travelCharge + gst
+  const totalCost = serviceCost + travelCharge
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -186,10 +185,7 @@ export default function BookDroneService() {
                 <span className="text-[#40493d]">{t('book_drone.travel_charge')}</span>
                 <span className="font-semibold text-[#1a1c1c]">₹{travelCharge.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#40493d]">{t('book_drone.taxes')}</span>
-                <span className="font-semibold text-[#1a1c1c]">₹{gst.toLocaleString()}</span>
-              </div>
+
             </div>
             <div className="flex justify-between text-lg font-bold text-[#0d631b] border-t border-[#bfcaba] pt-3">
               <span>{t('book_drone.total_payable')}</span>

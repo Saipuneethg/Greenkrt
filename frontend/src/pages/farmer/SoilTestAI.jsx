@@ -56,8 +56,7 @@ export default function SoilTestAI() {
 
     const serviceCost = basePriceValue // Flat fee
     const travelCharge = 200
-    const gst = Math.round((serviceCost + travelCharge) * 0.18)
-    const totalCost = serviceCost + travelCharge + gst
+    const totalCost = serviceCost + travelCharge
 
     try {
       const res = await fetch(`${API_BASE}/api/services/bookings`, {
@@ -486,8 +485,7 @@ export default function SoilTestAI() {
                     
                     const pCost = basePriceValue
                     const pTravel = 200
-                    const pGst = Math.round((pCost + pTravel) * 0.18)
-                    const pTotal = pCost + pTravel + pGst
+                    const pTotal = pCost + pTravel
                     
                     return (
                       <>
@@ -495,13 +493,9 @@ export default function SoilTestAI() {
                           <span>Collection Fee</span>
                           <span>₹{pCost}</span>
                         </div>
-                        <div className="flex justify-between text-sm mb-2 text-[#40493d]">
+                        <div className="flex justify-between text-sm mb-3 text-[#40493d]">
                           <span>Travel Charge</span>
                           <span>₹{pTravel}</span>
-                        </div>
-                        <div className="flex justify-between text-sm mb-3 text-[#40493d]">
-                          <span>GST (18%)</span>
-                          <span>₹{pGst}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg text-[#0d631b] pt-3 border-t border-[#bfcaba]">
                           <span>Total Cost</span>
