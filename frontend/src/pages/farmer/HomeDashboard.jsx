@@ -91,8 +91,12 @@ export default function HomeDashboard() {
         
         setWeatherData({
           temp: Math.round(data.main.temp),
+          feelsLike: Math.round(data.main.feels_like),
+          humidity: data.main.humidity,
+          wind: Math.round(data.wind.speed * 3.6), // m/s to km/h
           iconUrl: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
           description: data.weather[0].main,
+          detailedDesc: data.weather[0].description,
           city: data.name,
           seasonal: false  // real API data
         })
@@ -507,56 +511,65 @@ export default function HomeDashboard() {
         {/* Weather Card */}
         <div className="bg-white rounded-xl shadow-sm border border-[#bfcaba] overflow-hidden relative">
           <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#0d631b 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
-          <div className="p-4 relative z-10 flex items-center justify-between">
-            <div>
-              <h2 className="font-bold text-[#1a1c1c] mb-1">
-                {t('dashboard.weather')} - {weatherData ? weatherData.city : (user?.district?.split(',')[0] || 'Guntur')}
+          <div className="p-4 relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-[#1a1c1c]">
+                {t('dashboard.weather')} — {weatherData ? weatherData.city : (user?.district?.split(',')[0] || 'Guntur')}
               </h2>
-              <div className="text-2xl font-bold text-[#0d631b] flex items-center gap-2">
-                {weatherData ? `${weatherData.temp}°C` : '--°C'}
+              {weatherData?.seasonal && (
+                <span className="inline-block bg-[#fff8e1] text-[#7a5c00] text-[10px] px-2 py-0.5 rounded font-semibold border border-[#ffe082]">⚡ Estimated</span>
+              )}
+              {weatherData && !weatherData.seasonal && (
+                <span className="inline-block bg-[#cfe6c9] text-[#19722b] text-[10px] px-2 py-0.5 rounded font-semibold border border-[#0d631b]">🟢 Live</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              {/* Temp + icon */}
+              <div className="flex items-center gap-2">
                 {weatherData?.iconUrl ? (
-                  <img src={weatherData.iconUrl} alt="Weather icon" className="w-10 h-10 -ml-1 drop-shadow-sm" />
-                ) : weatherData?.icon ? (
-                  // Show a Material icon when using seasonal fallback (no image URL)
-                  <span className="material-symbols-outlined text-3xl">
-                    {weatherData.description === 'Rain' ? 'rainy'
-                      : weatherData.description === 'Clear' ? 'sunny'
-                      : weatherData.description === 'Clouds' ? 'partly_cloudy_day'
-                      : weatherData.description === 'Mist' ? 'foggy'
+                  <img src={weatherData.iconUrl} alt="Weather icon" className="w-14 h-14 drop-shadow-sm" />
+                ) : (
+                  <span className="material-symbols-outlined text-4xl text-[#0d631b]">
+                    {weatherData?.description === 'Rain' ? 'rainy'
+                      : weatherData?.description === 'Clear' ? 'sunny'
+                      : weatherData?.description === 'Clouds' ? 'partly_cloudy_day'
+                      : weatherData?.description === 'Mist' ? 'foggy'
                       : 'partly_cloudy_day'}
                   </span>
-                ) : (
-                  <span className="material-symbols-outlined text-3xl">partly_cloudy_day</span>
+                )}
+                <div>
+                  <div className="text-3xl font-bold text-[#0d631b]">{weatherData ? `${weatherData.temp}°C` : '--°C'}</div>
+                  <div className="text-xs text-[#40493d] capitalize">{weatherData?.detailedDesc || weatherData?.description || 'Loading...'}</div>
+                </div>
+              </div>
+
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-right">
+                {weatherData?.feelsLike != null && (
+                  <div className="col-span-2 text-xs text-[#707a6c]">Feels like <span className="font-bold text-[#1a1c1c]">{weatherData.feelsLike}°C</span></div>
+                )}
+                {weatherData?.humidity != null && (
+                  <div className="text-xs text-[#707a6c]">💧 Humidity <span className="font-bold text-[#1a1c1c]">{weatherData.humidity}%</span></div>
+                )}
+                {weatherData?.wind != null && (
+                  <div className="text-xs text-[#707a6c]">🌬️ Wind <span className="font-bold text-[#1a1c1c]">{weatherData.wind} km/h</span></div>
                 )}
               </div>
             </div>
-            <div className="text-right flex flex-col items-end gap-1">
-              {weatherData ? (
-                <span className="inline-block bg-[#cfe6c9] text-[#19722b] text-xs px-2 py-1 rounded font-bold border border-[#0d631b]">
-                  {weatherData.description}
-                </span>
-              ) : (
-                <span className="inline-block bg-[#e2e2e2] text-[#40493d] text-xs px-2 py-1 rounded font-bold border border-[#bfcaba]">
-                  Loading...
-                </span>
+
+            {/* Footer */}
+            <div className="mt-3 pt-2 border-t border-[#bfcaba]/40">
+              {weatherData && !weatherData.seasonal && (
+                <p className="text-[10px] text-[#707a6c] text-center">Live data from OpenWeatherMap</p>
               )}
               {weatherData?.seasonal && (
-                <span className="inline-block bg-[#fff8e1] text-[#7a5c00] text-[10px] px-2 py-0.5 rounded font-semibold border border-[#ffe082]">
-                  ⚡ Estimated — API offline
-                </span>
+                <p className="text-[10px] text-[#707a6c] text-center">Showing estimated seasonal data. Live weather unavailable.</p>
+              )}
+              {!weatherData && (
+                <p className="text-[10px] text-[#bfcaba] text-center">Fetching weather data...</p>
               )}
             </div>
-          </div>
-          <div className="px-4 pb-4 relative z-10">
-            {weatherData && !weatherData.seasonal && (
-              <p className="text-xs text-[#707a6c] text-center">{weatherData.description} • Live data from OpenWeatherMap</p>
-            )}
-            {weatherData?.seasonal && (
-              <p className="text-xs text-[#707a6c] text-center">Showing estimated seasonal data. Live weather unavailable.</p>
-            )}
-            {!weatherData && (
-              <p className="text-xs text-[#bfcaba] text-center">Fetching weather data...</p>
-            )}
           </div>
         </div>
 
